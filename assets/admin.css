@@ -1,0 +1,46 @@
+/* Shared look for the admin pages. Same tokens as halkvakt.se's statistics page. */
+:root { --mark:#080B0D; --panel:#0F1518; --upp:#1A2327; --kant:#1E282D; --skilje:#253036; --text:#E9EFF2; --text2:#A9B5BB; --dampad:#8FA0A9; --dampad2:#6F7C83;
+  --gul:#FFC94A; --gul2:rgba(255,201,74,.28); --gron:#1FB25A; --rod:#FF8A7A;
+  --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--mark); color:var(--text); font:15px/1.5 var(--sans); }
+.wrap { max-width:960px; margin:0 auto; padding:16px 16px 64px; }
+h1 { font-size:24px; margin:0 0 18px; letter-spacing:-.015em; font-weight:600; }
+h1 b { font-family:var(--mono); font-weight:600; letter-spacing:.12em; font-size:14px; display:block; color:var(--dampad); margin-bottom:4px; }
+h2 { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.12em; margin:0 0 12px; }
+.meta { font:12px var(--mono); color:var(--dampad); }
+.ingress { color:var(--text2); margin:0 0 16px; max-width:70ch; }
+.ruta { background:var(--panel); border:1px solid var(--kant); border-radius:14px; padding:16px 18px; }
+.ruta + .ruta { margin-top:10px; }
+.fel { color:var(--rod); font-size:13px; margin-top:8px; min-height:18px; }
+.klart { color:var(--gron); font-size:13px; margin-top:8px; min-height:18px; }
+
+/* The menu. Only the choices the signed-in user has are drawn. */
+#hv-meny { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:22px; padding:4px; background:var(--panel); border:1px solid var(--kant); border-radius:28px; }
+#hv-meny a { color:var(--text2); text-decoration:none; font:500 15px var(--sans); padding:10px 14px; border-radius:24px; min-height:44px; display:flex; align-items:center; }
+#hv-meny a[aria-current="page"] { background:var(--upp); color:var(--text); }
+#hv-meny .vem { margin-left:auto; display:flex; align-items:center; gap:8px; padding-right:6px; }
+#hv-meny button { background:none; border:1px solid var(--kant); color:var(--text2); border-radius:20px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
+@media (max-width:620px) { #hv-meny { border-radius:18px; } #hv-meny .vem .meta { display:none; } #hv-meny a { padding:10px 10px; font-size:14px; } }
+
+label { display:block; font:12px var(--mono); color:var(--dampad); margin:12px 0 4px; }
+input[type=email], input[type=password], input[type=text] { width:100%; padding:10px 12px; background:var(--mark); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:15px var(--sans); min-height:44px; }
+input:focus-visible, button:focus-visible, a:focus-visible { outline:2px solid var(--gul); outline-offset:2px; }
+button.gul { margin-top:14px; padding:10px 16px; background:var(--gul); color:var(--mark); border:0; border-radius:8px; font:600 14px var(--sans); cursor:pointer; min-height:44px; }
+button.gul[disabled] { opacity:.5; cursor:default; }
+button.liten { background:var(--panel); color:var(--text2); border:1px solid var(--kant); border-radius:8px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
+button.liten.rod { color:var(--rod); }
+.smal { max-width:380px; margin:12vh auto 0; }
+.kryss { display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px; }
+.kryss label { display:flex; align-items:center; gap:6px; margin:0; font:14px var(--sans); color:var(--text); min-height:36px; cursor:pointer; }
+.kryss input { width:18px; height:18px; accent-color:var(--gul); }
+.kort { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.kort a { display:block; text-decoration:none; color:var(--text); }
+.kort a .ruta:hover { border-color:var(--skilje); }
+.kort b { font:600 17px var(--sans); display:block; }
+.kort span { color:var(--text2); font-size:13px; }
+.anv { padding:14px 0; border-top:1px dashed var(--skilje); }
+.anv:first-child { border-top:0; padding-top:0; }
+.anv .rad { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; }
+.anv .knappar { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+[hidden] { display:none !important; }

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Användare · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+  <div id="hv-innehall" hidden>
+    <h1><b>HALKVAKT</b>Användare</h1>
+    <div class="ruta"><h2>Konton</h2><div id="lista"><p class="meta">Hämtar…</p></div><div class="fel" id="listfel" role="alert"></div><div class="klart" id="listklart" role="status"></div></div>
+    <form class="ruta" id="ny">
+      <h2>Lägg till en användare</h2>
+      <label for="nepost">E-post</label>
+      <input id="nepost" type="email" autocomplete="off" required>
+      <label for="nlosen">Lösenord, minst 12 tecken</label>
+      <input id="nlosen" type="text" autocomplete="off" minlength="12" required>
+      <label>Menyval</label>
+      <div class="kryss" id="nval"></div>
+      <button class="gul" type="submit">Lägg till</button>
+      <div class="fel" id="nyfel" role="alert"></div>
+      <p class="meta">Lösenordet skickas inte ut. Ge det till personen själv.</p>
+    </form>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var jag = null;
+  function kryss(till, valda, namn) {
+    till.textContent = "";
+    HV.MENY.forEach(function (m) {
+      var l = document.createElement("label"), i = document.createElement("input");
+      i.type = "checkbox"; i.value = m[0]; i.name = namn; i.checked = valda.indexOf(m[0]) >= 0;
+      l.appendChild(i); l.appendChild(document.createTextNode(m[1])); till.appendChild(l);
+    });
+  }
+  function valda(i) { return [].slice.call(i.querySelectorAll("input:checked")).map(function (x) { return x.value; }); }
+  function knapp(text, klass, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "liten" + (klass ? " " + klass : ""); b.textContent = text; b.addEventListener("click", fn); return b; }
+  function visaFel(f) { $("listfel").textContent = f.message || "Det gick inte just nu."; }
+
+  function rita(rader) {
+    var l = $("lista"); l.textContent = "";
+    rader.forEach(function (u) {
+      var d = document.createElement("div"); d.className = "anv";
+      var rad = document.createElement("div"); rad.className = "rad";
+      var b = document.createElement("b"); b.textContent = u.epost;
+      var s = document.createElement("span"); s.className = "meta"; s.textContent = "sedan " + String(u.skapad).slice(0, 10);
+      rad.appendChild(b); rad.appendChild(s); d.appendChild(rad);
+      var k = document.createElement("div"); k.className = "kryss"; kryss(k, u.menyval, "v-" + u.id); d.appendChild(k);
+      var kn = document.createElement("div"); kn.className = "knappar";
+      kn.appendChild(knapp("Spara menyval", "", function () {
+        $("listfel").textContent = "";
+        HV.api("anvandare", null, { gor: "andra", id: u.id, menyval: valda(k) }).then(ladda, function (f) { visaFel(f); ladda(); });
+      }));
+      kn.appendChild(knapp("Byt lösenord", "", function () {
+        var ny = prompt("Nytt lösenord för " + u.epost + " (minst 12 tecken):");
+        if (!ny) return;
+        $("listfel").textContent = "";
+        HV.api("anvandare", null, { gor: "andra", id: u.id, losen: ny }).then(function () { $("listklart").textContent = "Lösenordet är bytt för " + u.epost + "."; }, visaFel);
+      }));
+      if (u.epost !== jag.epost) kn.appendChild(knapp("Ta bort", "rod", function () {
+        if (!confirm("Ta bort " + u.epost + "?")) return;
+        $("listfel").textContent = "";
+        HV.api("anvandare", null, { gor: "tabort", id: u.id }).then(ladda, visaFel);
+      }));
+      d.appendChild(kn); l.appendChild(d);
+    });
+  }
+  function ladda() { return HV.api("anvandare").then(rita, visaFel); }
+
+  $("ny").addEventListener("submit", function (e) {
+    e.preventDefault(); $("nyfel").textContent = "";
+    HV.api("anvandare", null, { gor: "skapa", epost: $("nepost").value.trim(), losen: $("nlosen").value, menyval: valda($("nval")) })
+      .then(function () { $("ny").reset(); kryss($("nval"), ["statistik"], "ny"); return ladda(); })
+      .catch(function (f) { $("nyfel").textContent = f.message || "Det gick inte just nu."; });
+  });
+  HV.sida("anvandare", function (j) { jag = j; kryss($("nval"), ["statistik"], "ny"); ladda(); });
+})();
+</script>
+</body>
+</html>

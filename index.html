@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Start · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+<div class="wrap">
+  <form id="in" class="smal" hidden>
+    <h1><b>HALKVAKT</b>Admin</h1>
+    <label for="epost">E-post</label>
+    <input id="epost" type="email" autocomplete="username" required>
+    <label for="losen">Lösenord</label>
+    <input id="losen" type="password" autocomplete="current-password" required>
+    <button class="gul" type="submit">Logga in</button>
+    <div class="fel" id="infel" role="alert"></div>
+  </form>
+
+  <form id="start" class="smal" hidden>
+    <h1><b>HALKVAKT</b>Skapa det första kontot</h1>
+    <p class="ingress">Länken gäller en gång. Kontot får alla menyval och kan sedan lägga till fler användare.</p>
+    <label for="sepost">E-post</label>
+    <input id="sepost" type="email" autocomplete="username" required>
+    <label for="slosen">Lösenord, minst 12 tecken</label>
+    <input id="slosen" type="password" autocomplete="new-password" minlength="12" required>
+    <button class="gul" type="submit">Skapa kontot</button>
+    <div class="fel" id="startfel" role="alert"></div>
+  </form>
+
+  <div id="inne" hidden>
+    <nav id="hv-meny" aria-label="Meny"></nav>
+    <h1><b>HALKVAKT</b>Admin</h1>
+    <div class="kort" id="kort"></div>
+    <p class="ingress" id="tomt" hidden>Ditt konto har inga menyval än. Be den som sköter användarna att lägga till dem.</p>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var TEXT = { statistik: "Besök på halkvakt.se, appen och annonserna.", social: "Inlägg, regler och utkast.", prioriteringar: "Vad som görs nu och sedan.", anvandare: "Konton och vem som ser vad." };
+  var kod = /^#start=(.+)$/.exec(location.hash);
+
+  function visaInne() {
+    $("in").hidden = true; $("start").hidden = true;
+    HV.sida("", function (jag) {
+      $("inne").hidden = false;
+      var k = $("kort"); k.textContent = "";
+      HV.MENY.forEach(function (m) {
+        if (jag.menyval.indexOf(m[0]) < 0) return;
+        var a = document.createElement("a"); a.href = m[0];
+        var r = document.createElement("div"); r.className = "ruta";
+        var b = document.createElement("b"); b.textContent = m[1];
+        var s = document.createElement("span"); s.textContent = TEXT[m[0]];
+        r.appendChild(b); r.appendChild(s); a.appendChild(r); k.appendChild(a);
+      });
+      $("tomt").hidden = jag.menyval.length > 0;
+    });
+  }
+
+  $("in").addEventListener("submit", function (e) {
+    e.preventDefault(); $("infel").textContent = "";
+    HV.loggaIn($("epost").value.trim(), $("losen").value).then(visaInne, function (f) {
+      $("infel").textContent = f.status === 400 ? "Fel e-post eller lösenord." : "Det gick inte att logga in just nu.";
+    });
+  });
+
+  $("start").addEventListener("submit", function (e) {
+    e.preventDefault(); $("startfel").textContent = "";
+    var ep = $("sepost").value.trim(), lo = $("slosen").value;
+    HV.start(decodeURIComponent(kod[1]), ep, lo).then(function () {
+      history.replaceState(null, "", location.pathname);
+      return HV.loggaIn(ep, lo).then(visaInne);
+    }).catch(function (f) { $("startfel").textContent = f.message === "koden gäller inte" ? "Länken gäller inte längre." : (f.message || "Det gick inte just nu."); });
+  });
+
+  if (kod) $("start").hidden = false;
+  else if (HV.inloggad()) visaInne();
+  else $("in").hidden = false;
+})();
+</script>
+</body>
+</html>
