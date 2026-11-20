@@ -7,7 +7,7 @@ Nyckeln i `assets/admin.js` är Supabases publika nyckel och är avsedd att syna
 
 ## Hur det hänger ihop
 
-- Sidorna är statiska: `index.html` (inloggning och start), `statistik.html`, `social.html`, `social-inlagg.html`, `prioriteringar.html`, `anvandare.html`.
+- Sidorna är statiska: `index.html` (inloggning och start), `statistik.html`, `social.html`, `social-inlagg.html`, `social-mallar.html`, `prioriteringar.html`, `anvandare.html`.
 - Inloggningen är Supabase Auth med e-post och lösenord.
 - All data hämtas genom edge-funktionen `admin` i Halkvakts Supabase-projekt. Den frågar Auth vem som är inloggad och läser
   användarens menyval ur tabellen `admin_behorighet`. Ett menyval som saknas ger 403 på delens data, så en dold meny är också
@@ -24,5 +24,5 @@ En ändrad fil här är inte en deploy.
 ## Läget
 
 - Fas 1 (klar): inloggning, användare, statistik.
-- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal, och dagslägets utkast som kan ändras eller slängas före passet (delen `social` i funktionen, tabellen `social_utkast` i Halkvakt sql/131, DECISIONS #918, Halkvakt PR #1719: Bengts ja 20/11, väntar på att slås ihop och driftsättas). `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
+- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal, och dagslägets utkast som kan ändras eller slängas före passet (delen `social` i funktionen, tabellen `social_utkast` i Halkvakt sql/131, DECISIONS #918, Halkvakt PR #1719: Bengts ja 20/11, väntar på att slås ihop och driftsättas). `social-mallar.html` visar bildmallarna (länkade till designytan *Halkvakt live – bildmallar* i Claude Design) och textmallarna, som går att ändra när Halkvakt PR #1722 (FÖRSLAG DECISIONS #919, sql/132, delen `textmallar`) är i drift; tills dess visas standardtexterna. `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
 - Prioriteringar: tom sida tills innehållet är bestämt.

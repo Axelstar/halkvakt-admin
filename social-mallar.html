@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Mallar · Sociala medier · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+<style>
+  .sektion { margin-top:22px; }
+  .ruta p { margin:0 0 10px; max-width:74ch; }
+  .bilder { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .bilder a { color:var(--text); text-decoration:none; display:block; }
+  .bilder img { width:100%; aspect-ratio:1080/1350; object-fit:cover; border-radius:10px; border:1px solid var(--kant); background:var(--upp); display:block; }
+  .bilder a:hover img { border-color:var(--gul); }
+  .bilder span { display:block; font:500 13px var(--sans); margin-top:6px; }
+  .bilder small { display:block; font:11px var(--mono); color:var(--dampad); }
+  .mall { padding:14px 0; border-top:1px dashed var(--skilje); }
+  .mall:first-of-type { border-top:0; padding-top:4px; }
+  .mall .rad1 { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .mall b { font:600 15px var(--sans); }
+  .andrad { font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--gul); }
+  textarea { width:100%; min-height:64px; margin-top:8px; padding:10px 12px; background:var(--mark); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:14px/1.5 var(--sans); resize:vertical; }
+  .falt { font:12px var(--mono); color:var(--dampad); margin-top:6px; }
+  .falt code { color:var(--text2); }
+  .verktyg { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  .verktyg .gul { margin-top:0; }
+  h2.grupp { margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+  <div id="hv-innehall" hidden>
+    <h1><b>HALKVAKT</b>Sociala medier</h1>
+    <nav class="undermeny" aria-label="Sociala medier"><a href="social">Regler</a><a href="social-inlagg">Inlägg</a><a href="social-mallar" aria-current="page">Mallar</a></nav>
+
+    <div class="ruta">
+      <h2>Bildmallarna</h2>
+      <p>Klicka på en bild för att öppna mallen i Claude Design. Där kan du ändra layouten eller kommentera. Ändringen går inte ut av sig själv: den förs in i koden och går i drift när den är godkänd. Färgerna följer varumärkesguiden (gult bara när en fara är live).</p>
+      <div class="bilder" id="bilder"></div>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Textmallarna</h2>
+      <p id="textinfo">Texterna med <code>{fält}</code> fylls i när inlägget skapas. En ändring gäller från nästa inlägg. Siffrorna och länens rader skrivs alltid av Halkvakt och går inte att ändra här.</p>
+      <div class="fel" id="mallfel" role="alert"></div>
+    </div>
+    <div id="mallar"><p class="meta">Hämtar…</p></div>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var RAW = "https://raw.githubusercontent.com/Axelstar/halkvakt/";
+  var INLAGG = RAW + "main/marknadsforing/inlagg/";
+  var DESIGN = "https://claude.ai/artifact/EfHvJHHM9Ff7m3exye89wD#artboard-";
+  // One real post per template as the thumbnail; the canvas holds the template itself, drawn by the same code.
+  var BILDER = [
+    ["Main", "2026-11-20-live-1307.jpg", "SMHI-varning", "Larm"],
+    ["Larm-Forsta", "2026-11-06-live-0607.jpg", "Höstens första", "Larm"],
+    ["Sedan-i-gar", "2026-11-19-lunch.jpg", "Sedan i går", "Dagsläge"],
+    ["Hostens-kallaste", "2026-11-11-lunch.jpg", "Höstens kallaste", "Dagsläge"],
+    ["Veckan", "2026-11-15-kvall.jpg", "Veckan på vägarna", "Dagsläge"],
+    ["Svep-Omslag", "2026-11-20-morgon-01.jpg", "Omslaget", "Svep"],
+    ["Svep-Lan", "2026-11-20-morgon-02.jpg", "Länskortet", "Svep"],
+    ["Svep-Appen", "2026-11-20-morgon-10.jpg", "Appen", "Svep"]
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  var mallar = null, egna = {}, kanAndra = false;
+
+  BILDER.forEach(function (b) {
+    var a = document.createElement("a"); a.href = DESIGN + b[0]; a.target = "_blank"; a.rel = "noopener";
+    a.setAttribute("aria-label", "Öppna mallen " + b[2] + " i Claude Design");
+    var img = document.createElement("img"); img.loading = "lazy"; img.alt = ""; img.src = INLAGG + b[1];
+    var s = document.createElement("span"); s.textContent = b[2];
+    var sm = document.createElement("small"); sm.textContent = b[3];
+    a.appendChild(img); a.appendChild(s); a.appendChild(sm); $("bilder").appendChild(a);
+  });
+
+  function tid(iso) { return new Date(iso).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+
+  function rita() {
+    var l = $("mallar"); l.textContent = "";
+    var grupper = {};
+    Object.keys(mallar).forEach(function (k) { (grupper[mallar[k].grupp] = grupper[mallar[k].grupp] || []).push(k); });
+    Object.keys(grupper).forEach(function (g) {
+      var ruta = document.createElement("div"); ruta.className = "sektion ruta";
+      var h = document.createElement("h2"); h.className = "grupp"; h.textContent = g; ruta.appendChild(h);
+      grupper[g].forEach(function (k) { ruta.appendChild(mallRad(k)); });
+      l.appendChild(ruta);
+    });
+  }
+
+  function mallRad(k) {
+    var mall = mallar[k], egen = egna[k];
+    var d = document.createElement("div"); d.className = "mall";
+    var r1 = document.createElement("div"); r1.className = "rad1";
+    var b = document.createElement("b"); b.textContent = mall.namn; r1.appendChild(b);
+    if (egen) { var a = document.createElement("span"); a.className = "andrad"; a.textContent = "Ändrad av " + egen.andrad_av + " " + tid(egen.andrad); r1.appendChild(a); }
+    d.appendChild(r1);
+    var id = "m-" + k.replace(/\W/g, "-");
+    var lab = document.createElement("label"); lab.className = "dold"; lab.htmlFor = id; lab.textContent = mall.namn;
+    lab.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)";
+    var ta = document.createElement("textarea"); ta.id = id; ta.value = egen ? egen.text : mall.text; ta.disabled = !kanAndra;
+    ta.rows = Math.max(2, Math.ceil(ta.value.length / 90) + (ta.value.match(/\n/g) || []).length);
+    d.appendChild(lab); d.appendChild(ta);
+    var falt = Object.keys(mall.falt);
+    if (falt.length) {
+      var f = document.createElement("div"); f.className = "falt";
+      f.innerHTML = "Fält: " + falt.map(function (x) { return "<code>{" + x + "}</code> " + esc(mall.falt[x]); }).join(" · ");
+      d.appendChild(f);
+    }
+    if (kanAndra) {
+      var v = document.createElement("div"); v.className = "verktyg";
+      var spara = document.createElement("button"); spara.type = "button"; spara.className = "gul"; spara.textContent = "Spara";
+      var ater = document.createElement("button"); ater.type = "button"; ater.className = "liten"; ater.textContent = "Återställ standardtexten"; ater.hidden = !egen;
+      var besked = document.createElement("span"); besked.className = "meta"; besked.setAttribute("role", "status");
+      spara.addEventListener("click", function () { gor({ gor: "spara", nyckel: k, text: ta.value }, besked, "Sparat. Gäller från nästa inlägg."); });
+      ater.addEventListener("click", function () { gor({ gor: "aterstall", nyckel: k }, besked, "Standardtexten gäller igen."); });
+      v.appendChild(spara); v.appendChild(ater); v.appendChild(besked); d.appendChild(v);
+    }
+    return d;
+  }
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  function gor(kropp, besked, ok) {
+    besked.textContent = ""; $("mallfel").textContent = "";
+    HV.api("textmallar", null, kropp).then(function () {
+      return hamtaEgna().then(function () { rita(); var b = document.getElementById("m-" + kropp.nyckel.replace(/\W/g, "-")); if (b) b.parentNode.querySelector("[role=status]").textContent = ok; });
+    }, function (e) { besked.textContent = e.message.charAt(0).toUpperCase() + e.message.slice(1) + "."; });
+  }
+
+  function hamtaEgna() {
+    return HV.api("textmallar").then(function (rader) { egna = {}; rader.forEach(function (r) { egna[r.nyckel] = r; }); kanAndra = true; });
+  }
+
+  function hamtaMallar() {
+    // The standard texts are on main once the change is merged; until then the branch shows them, read-only.
+    return fetch(RAW + "main/marknadsforing/mallar.json", { cache: "no-store" }).then(function (r) {
+      if (r.ok) return r.json();
+      return fetch(RAW + "claude/social-textmallar/marknadsforing/mallar.json").then(function (r2) { if (!r2.ok) throw new Error(); return r2.json(); });
+    });
+  }
+
+  HV.sida("social", function () {
+    hamtaMallar().then(function (m) {
+      mallar = m;
+      return hamtaEgna().catch(function () {
+        kanAndra = false;
+        $("textinfo").insertAdjacentHTML("afterend", '<p class="meta">Redigeringen är inte påslagen än. Tills ändringen i Halkvakt (PR #1722) är godkänd och i drift visar sidan standardtexterna som de står i koden.</p>');
+      });
+    }).then(rita, function () { $("mallar").textContent = ""; $("mallfel").textContent = "Kunde inte hämta textmallarna."; });
+  });
+})();
+</script>
+</body>
+</html>
