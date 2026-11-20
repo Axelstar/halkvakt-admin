@@ -10,6 +10,10 @@
 // POST {del:"anvandare", gor:"skapa", epost, losen, menyval}
 // POST {del:"anvandare", gor:"andra", id, menyval?, losen?}
 // POST {del:"anvandare", gor:"tabort", id}
+// GET  ?del=mallar                      (menyval mallar) → [{slug, grupp, rubrik, ordning, andrad, andrad_av}]
+// GET  ?del=mallar&slug=…               → dokumentet med sin text
+// POST {del:"mallar", gor:"spara", slug, grupp, rubrik, text}
+// POST {del:"mallar", gor:"tabort", slug}
 // POST {del:"start", kod, epost, losen} → det första kontot, en gång, mot engångskoden i admin_start. Kräver ingen inloggning.
 const SB = Deno.env.get("SUPABASE_URL")!;
 const SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -21,7 +25,8 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, content-type",
   "Vary": "Origin",
 };
-const MENYVAL = ["statistik", "social", "prioriteringar", "anvandare"];
+const MENYVAL = ["statistik", "social", "mallar", "prioriteringar", "anvandare"];
+const SLUG = /^[a-z0-9-]{1,60}$/;
 const MINST_LOSEN = 12;
 
 const svar = (kropp: unknown, status = 200) =>
@@ -175,13 +180,48 @@ async function andraAnvandare(jag: Jag, d: Record<string, unknown>) {
   return fel("okänd åtgärd", 400);
 }
 
+async function lasMallar(u: URL) {
+  const slug = u.searchParams.get("slug") ?? "";
+  if (slug && !SLUG.test(slug)) return fel("fel uppgifter", 400);
+  const q = slug
+    ? `select=slug,grupp,rubrik,text,ordning,andrad,andrad_av&slug=eq.${slug}`
+    : "select=slug,grupp,rubrik,ordning,andrad,andrad_av&order=grupp.asc,ordning.asc,rubrik.asc";
+  const r = await fetch(`${SB}/rest/v1/admin_dokument?${q}`, { headers: H });
+  if (!r.ok) return fel("kunde inte läsa", 500);
+  const rader = await r.json();
+  if (!slug) return svar(rader);
+  return rader[0] ? svar(rader[0]) : fel("dokumentet finns inte", 404);
+}
+
+async function andraMallar(jag: Jag, d: Record<string, unknown>) {
+  const slug = typeof d.slug === "string" && SLUG.test(d.slug) ? d.slug : "";
+  if (!slug) return fel("fel uppgifter", 400);
+  if (d.gor === "spara") {
+    const grupp = typeof d.grupp === "string" ? d.grupp.trim().slice(0, 60) : "";
+    const rubrik = typeof d.rubrik === "string" ? d.rubrik.trim().slice(0, 120) : "";
+    const text = typeof d.text === "string" ? d.text.slice(0, 60000) : "";
+    if (!grupp || !rubrik) return fel("grupp och rubrik behövs", 400);
+    const r = await fetch(`${SB}/rest/v1/admin_dokument`, {
+      method: "POST",
+      headers: { ...H, Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ slug, grupp, rubrik, text, andrad: new Date().toISOString(), andrad_av: jag.epost }),
+    });
+    return r.ok ? svar({ klart: true }) : fel("kunde inte spara", 500);
+  }
+  if (d.gor === "tabort") {
+    const r = await fetch(`${SB}/rest/v1/admin_dokument?slug=eq.${slug}`, { method: "DELETE", headers: { ...H, Prefer: "return=minimal" } });
+    return r.ok ? svar({ klart: true }) : fel("kunde inte ta bort", 500);
+  }
+  return fel("okänd åtgärd", 400);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   try {
     const u = new URL(req.url);
     let d: Record<string, unknown> = {};
     if (req.method === "POST") {
-      d = JSON.parse((await req.text()).slice(0, 4000) || "{}");
+      d = JSON.parse((await req.text()).slice(0, 200000) || "{}");
       if (d.del === "start") return await start(d);
     } else if (req.method !== "GET") {
       return fel("fel metod", 405);
@@ -194,6 +234,7 @@ Deno.serve(async (req) => {
     if (!jag.menyval.includes(del)) return fel("saknar behörighet", 403);
     if (del === "statistik" && req.method === "GET") return await statistik(u);
     if (del === "anvandare") return req.method === "GET" ? await listaAnvandare() : await andraAnvandare(jag, d);
+    if (del === "mallar") return req.method === "GET" ? await lasMallar(u) : await andraMallar(jag, d);
     return fel("delen är inte byggd än", 404);
   } catch (_e) {
     return fel("internt fel", 500);

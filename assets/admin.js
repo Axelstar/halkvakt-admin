@@ -6,7 +6,7 @@
   var NYCKEL = "sb_publishable_FGhyCVl0gSpMh21o1BJGMg_bqxvCs1k";
   var API = SB + "/functions/v1/admin";
   var LAGER = "hv-admin";
-  var MENY = [["statistik", "Statistik"], ["social", "Sociala medier"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
+  var MENY = [["statistik", "Statistik"], ["social", "Sociala medier"], ["mallar", "Mallar och rutiner"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
 
   function las() { try { return JSON.parse(localStorage.getItem(LAGER) || "null"); } catch (e) { return null; } }
   function spara(s) { try { if (s) localStorage.setItem(LAGER, JSON.stringify(s)); else localStorage.removeItem(LAGER); } catch (e) {} }

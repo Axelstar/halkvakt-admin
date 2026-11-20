@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Mallar och rutiner · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+<style>
+  .grupp + .grupp { margin-top:10px; }
+  .dok { display:flex; justify-content:space-between; gap:12px; align-items:baseline; width:100%; text-align:left; background:none; border:0; border-top:1px dashed var(--skilje); color:var(--text); font:500 16px var(--sans); padding:12px 0; cursor:pointer; min-height:44px; }
+  .dok:first-of-type { border-top:0; }
+  .dok:hover b { color:var(--gul); }
+  .dok b { font-weight:500; }
+  .verktyg { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .text { max-width:74ch; overflow-wrap:anywhere; }
+  .text h2 { font:600 19px var(--sans); color:var(--text); text-transform:none; letter-spacing:-.01em; margin:26px 0 8px; }
+  .text h3 { font:600 16px var(--sans); margin:20px 0 6px; }
+  .text p, .text li { color:var(--text); }
+  .text ul, .text ol { padding-left:22px; }
+  .text li { margin:4px 0; }
+  .text a { color:var(--gul); }
+  .text code { font:13px var(--mono); background:var(--mark); border:1px solid var(--kant); border-radius:4px; padding:1px 5px; }
+  .text pre { background:var(--mark); border:1px solid var(--kant); border-radius:8px; padding:12px; overflow-x:auto; white-space:pre-wrap; font:13px/1.5 var(--mono); }
+  .text pre code { border:0; padding:0; background:none; }
+  .text blockquote { margin:12px 0; padding:8px 14px; border-left:3px solid var(--gul); color:var(--text2); background:var(--upp); border-radius:0 8px 8px 0; }
+  .text blockquote p { color:var(--text2); margin:4px 0; }
+  .tabell { overflow-x:auto; margin:12px 0; }
+  .text table { border-collapse:collapse; font-size:14px; min-width:100%; }
+  .text th, .text td { border-top:1px dashed var(--skilje); padding:7px 12px 7px 0; text-align:left; vertical-align:top; }
+  .text th { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.06em; border-top:0; }
+  textarea { width:100%; min-height:55vh; padding:12px; background:var(--mark); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:14px/1.5 var(--mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+  <div id="hv-innehall" hidden>
+    <div id="vy-lista">
+      <h1><b>HALKVAKT</b>Mallar och rutiner</h1>
+      <p class="ingress">Det vi postar och mejlar, och hur de automatiska rutinerna går. Texterna kan ändras här och gäller som gemensam beskrivning. De styr inte rutinerna.</p>
+      <div id="lista"><p class="meta">Hämtar…</p></div>
+      <p><button class="liten" type="button" id="nytt">Nytt dokument</button></p>
+    </div>
+
+    <div id="vy-dok" hidden>
+      <div class="verktyg"><button class="liten" type="button" id="tillbaka">Alla dokument</button><button class="liten" type="button" id="redigera">Redigera</button></div>
+      <h1 id="dok-rubrik"></h1>
+      <p class="meta" id="dok-meta"></p>
+      <div class="ruta"><div class="text" id="dok-text"></div></div>
+    </div>
+
+    <form id="vy-red" hidden>
+      <h1><b>HALKVAKT</b><span id="red-titel">Redigera</span></h1>
+      <label for="r-rubrik">Rubrik</label>
+      <input id="r-rubrik" type="text" maxlength="120" required>
+      <label for="r-grupp">Grupp</label>
+      <input id="r-grupp" type="text" maxlength="60" list="grupper" required>
+      <datalist id="grupper"></datalist>
+      <label for="r-text">Text (Markdown: # rubrik, - punkt, **fet**, | tabell |)</label>
+      <textarea id="r-text"></textarea>
+      <div class="verktyg" style="margin-top:12px"><button class="gul" type="submit" style="margin-top:0">Spara</button><button class="liten" type="button" id="avbryt">Avbryt</button><button class="liten rod" type="button" id="tabort">Ta bort</button></div>
+      <div class="fel" id="redfel" role="alert"></div>
+    </form>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var alla = [], oppet = null, redSlug = "";
+
+  // A small Markdown reader. Everything is escaped first, so a document can never inject markup.
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function rad(s) {
+    var kod = [];
+    s = esc(s).replace(/`([^`]+)`/g, function (_, k) { kod.push(k); return "\u0000" + (kod.length - 1) + "\u0000"; });
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,;:)])/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+    return s.replace(/\u0000(\d+)\u0000/g, function (_, i) { return "<code>" + kod[+i] + "</code>"; });
+  }
+  function celler(l) { return l.trim().replace(/^\||\|$/g, "").split("|").map(function (c) { return c.trim(); }); }
+  function md(src) {
+    var L = src.replace(/\r/g, "").split("\n"), ut = [], i = 0, m;
+    while (i < L.length) {
+      var l = L[i];
+      if (/^```/.test(l)) { var k = []; i++; while (i < L.length && !/^```/.test(L[i])) k.push(L[i++]); i++; ut.push("<pre><code>" + esc(k.join("\n")) + "</code></pre>"); continue; }
+      if ((m = /^(#{1,4})\s+(.*)$/.exec(l))) { var n = m[1].length <= 2 ? 2 : 3; ut.push("<h" + n + ">" + rad(m[2]) + "</h" + n + ">"); i++; continue; }
+      if (/^\s*\|.*\|\s*$/.test(l) && i + 1 < L.length && /^\s*\|[\s:|-]+\|\s*$/.test(L[i + 1])) {
+        var h = celler(l), t = '<div class="tabell"><table><tr>' + h.map(function (c) { return "<th>" + rad(c) + "</th>"; }).join("") + "</tr>";
+        i += 2;
+        while (i < L.length && /^\s*\|.*\|\s*$/.test(L[i])) { t += "<tr>" + celler(L[i]).map(function (c) { return "<td>" + rad(c) + "</td>"; }).join("") + "</tr>"; i++; }
+        ut.push(t + "</table></div>"); continue;
+      }
+      if (/^>\s?/.test(l)) { var q = []; while (i < L.length && /^>\s?/.test(L[i])) q.push(L[i++].replace(/^>\s?/, "")); ut.push("<blockquote><p>" + rad(q.join(" ")) + "</p></blockquote>"); continue; }
+      if ((m = /^(\s*)([-*]|\d+\.)\s+/.exec(l))) {
+        var ord = /\d/.test(m[2]), tag = ord ? "ol" : "ul", p = [];
+        while (i < L.length && /^\s*([-*]|\d+\.)\s+/.test(L[i])) {
+          var txt = L[i].replace(/^\s*([-*]|\d+\.)\s+/, ""); i++;
+          while (i < L.length && /^\s{2,}\S/.test(L[i]) && !/^\s*([-*]|\d+\.)\s+/.test(L[i])) txt += " " + L[i++].trim();
+          p.push("<li>" + rad(txt) + "</li>");
+        }
+        ut.push("<" + tag + ">" + p.join("") + "</" + tag + ">"); continue;
+      }
+      if (!l.trim()) { i++; continue; }
+      var st = [];
+      while (i < L.length && L[i].trim() && !/^(#{1,4}\s|```|>\s?|\s*([-*]|\d+\.)\s+)/.test(L[i]) && !(/^\s*\|.*\|\s*$/.test(L[i]) && i + 1 < L.length && /^\s*\|[\s:|-]+\|\s*$/.test(L[i + 1]))) st.push(L[i++]);
+      ut.push("<p>" + st.map(rad).join("<br>") + "</p>");
+    }
+    return ut.join("\n");
+  }
+
+  function visa(vy) { ["vy-lista", "vy-dok", "vy-red"].forEach(function (v) { $(v).hidden = v !== vy; }); window.scrollTo(0, 0); }
+  function datum(s) { return String(s || "").slice(0, 10); }
+
+  function ritaLista() {
+    var l = $("lista"); l.textContent = "";
+    if (!alla.length) { var p = document.createElement("p"); p.className = "meta"; p.textContent = "Inga dokument än."; l.appendChild(p); }
+    var grupper = [];
+    alla.forEach(function (d) { if (grupper.indexOf(d.grupp) < 0) grupper.push(d.grupp); });
+    var dl = $("grupper"); dl.textContent = "";
+    grupper.forEach(function (g) {
+      var o = document.createElement("option"); o.value = g; dl.appendChild(o);
+      var r = document.createElement("div"); r.className = "ruta grupp";
+      var h = document.createElement("h2"); h.textContent = g; r.appendChild(h);
+      alla.filter(function (d) { return d.grupp === g; }).forEach(function (d) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "dok";
+        var n = document.createElement("b"); n.textContent = d.rubrik;
+        var m = document.createElement("span"); m.className = "meta"; m.textContent = datum(d.andrad);
+        b.appendChild(n); b.appendChild(m);
+        b.addEventListener("click", function () { location.hash = d.slug; });
+        r.appendChild(b);
+      });
+      l.appendChild(r);
+    });
+  }
+  function ladda() { return HV.api("mallar").then(function (r) { alla = r; ritaLista(); }); }
+
+  function oppna(slug) {
+    return HV.api("mallar", { slug: slug }).then(function (d) {
+      oppet = d;
+      $("dok-rubrik").textContent = d.rubrik;
+      $("dok-meta").textContent = d.grupp + " · ändrad " + datum(d.andrad) + (d.andrad_av ? " av " + d.andrad_av : "");
+      $("dok-text").innerHTML = md(d.text || "");
+      visa("vy-dok");
+    }, function () { location.hash = ""; });
+  }
+
+  function redigera(d) {
+    redSlug = d ? d.slug : "";
+    $("red-titel").textContent = d ? "Redigera" : "Nytt dokument";
+    $("r-rubrik").value = d ? d.rubrik : ""; $("r-grupp").value = d ? d.grupp : ""; $("r-text").value = d ? d.text : "";
+    $("tabort").hidden = !d; $("redfel").textContent = "";
+    visa("vy-red");
+  }
+  function slugAv(s) {
+    return s.toLowerCase().replace(/[åä]/g, "a").replace(/ö/g, "o").replace(/é/g, "e").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "dokument";
+  }
+
+  $("nytt").addEventListener("click", function () { redigera(null); });
+  $("tillbaka").addEventListener("click", function () { location.hash = ""; });
+  $("redigera").addEventListener("click", function () { if (oppet) redigera(oppet); });
+  $("avbryt").addEventListener("click", function () { if (redSlug && oppet) visa("vy-dok"); else visa("vy-lista"); });
+  $("vy-red").addEventListener("submit", function (e) {
+    e.preventDefault(); $("redfel").textContent = "";
+    var slug = redSlug;
+    if (!slug) { slug = slugAv($("r-rubrik").value); var n = 2, bas = slug; while (alla.some(function (d) { return d.slug === slug; })) slug = bas + "-" + n++; }
+    HV.api("mallar", null, { gor: "spara", slug: slug, rubrik: $("r-rubrik").value, grupp: $("r-grupp").value, text: $("r-text").value })
+      .then(ladda).then(function () { if (location.hash.slice(1) === slug) return oppna(slug); location.hash = slug; })
+      .catch(function (f) { $("redfel").textContent = f.message || "Det gick inte att spara."; });
+  });
+  $("tabort").addEventListener("click", function () {
+    if (!redSlug || !confirm("Ta bort dokumentet?")) return;
+    HV.api("mallar", null, { gor: "tabort", slug: redSlug }).then(ladda).then(function () { oppet = null; location.hash = ""; visa("vy-lista"); })
+      .catch(function (f) { $("redfel").textContent = f.message || "Det gick inte att ta bort."; });
+  });
+
+  function efterHash() { var s = decodeURIComponent(location.hash.slice(1)); if (/^[a-z0-9-]{1,60}$/.test(s)) oppna(s); else visa("vy-lista"); }
+  window.addEventListener("hashchange", efterHash);
+  HV.sida("mallar", function () { ladda().then(efterHash).catch(function () { $("lista").textContent = "Kunde inte hämta dokumenten just nu."; }); });
+})();
+</script>
+</body>
+</html>
