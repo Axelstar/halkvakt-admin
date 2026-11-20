@@ -17,12 +17,12 @@ Nyckeln i `assets/admin.js` är Supabases publika nyckel och är avsedd att syna
 
 ## server/
 
-`server/admin/index.ts` är funktionens källa och `server/128_admin.sql` är migrationen, som de kördes 20/11 2026.
+`server/admin/index.ts` är funktionens källa och `server/128_admin.sql` är migrationen, som de kördes 20/11 2026. Från Halkvakt PR #1719 bor funktionen i `supabase/functions/admin/` där och deployas med deploy-knappen; kopian här är en spegel.
 De hör hemma i Axelstar/Halkvakt (`supabase/functions/admin/` och `sql/`) tillsammans med beslutet i DECISIONS, och flyttas dit.
 En ändrad fil här är inte en deploy.
 
 ## Läget
 
 - Fas 1 (klar): inloggning, användare, statistik.
-- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal, och dagslägets utkast som kan ändras eller slängas före passet (delen `social` i funktionen, tabellen `social_utkast` i Halkvakt sql/130, FÖRSLAG DECISIONS #917, Halkvakt PR #1719: väntar på Bengts ord och är inte i drift). `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
+- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal, och dagslägets utkast som kan ändras eller slängas före passet (delen `social` i funktionen, tabellen `social_utkast` i Halkvakt sql/131, DECISIONS #918, Halkvakt PR #1719: Bengts ja 20/11, väntar på att slås ihop och driftsättas). `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
 - Prioriteringar: tom sida tills innehållet är bestämt.
