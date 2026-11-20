@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Inlägg · Sociala medier · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+<style>
+  .sektion { margin-top:22px; }
+  .ruta p { margin:0 0 10px; max-width:74ch; }
+  .ruta p:last-child { margin-bottom:0; }
+  .chip { display:inline-block; font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:6px; white-space:nowrap; }
+  .chip.gul { background:var(--gul); color:var(--mark); }
+  .chip.mork { background:var(--upp); color:var(--text2); border:1px solid var(--kant); }
+  .stor { font:600 22px/1.2 var(--mono); letter-spacing:-.01em; margin:2px 0 8px; }
+  .post { display:flex; gap:14px; align-items:center; width:100%; text-align:left; background:none; border:0; border-top:1px dashed var(--skilje); color:var(--text); padding:12px 0; cursor:pointer; font:inherit; }
+  .post:first-child { border-top:0; padding-top:0; }
+  .post:hover .rub { color:var(--gul); }
+  .post img { width:64px; height:80px; object-fit:cover; border-radius:8px; background:var(--upp); flex:none; }
+  .post .info { min-width:0; flex:1; }
+  .post .rad1 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .post .rub { font:500 15px var(--sans); display:block; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kanaler { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .kanal { font:11px var(--mono); color:var(--dampad); }
+  .kanal.ja { color:var(--gron); }
+  .kanal.nej { color:var(--rod); }
+  /* Preview */
+  .verktyg { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .flik { background:var(--panel); color:var(--text2); border:1px solid var(--kant); border-radius:20px; padding:8px 14px; font:500 14px var(--sans); cursor:pointer; min-height:40px; }
+  .flik[aria-selected="true"] { background:var(--upp); color:var(--text); border-color:var(--skilje); }
+  .forhand { display:grid; grid-template-columns:minmax(0,420px) minmax(0,1fr); gap:16px; align-items:start; }
+  @media (max-width:760px) { .forhand { grid-template-columns:1fr; } }
+  .bildram { position:relative; background:var(--mark); border:1px solid var(--kant); border-radius:12px; overflow:hidden; }
+  .bildram img { display:block; width:100%; aspect-ratio:1080/1350; object-fit:contain; }
+  .bildnav { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .text { white-space:pre-wrap; overflow-wrap:anywhere; font:14px/1.55 var(--sans); }
+  .text a { color:var(--gul); }
+  .text .tagg { color:#8EC5FF; }
+  .rakna { font:12px var(--mono); color:var(--dampad); margin-top:10px; }
+  .lankar a { color:var(--gul); font:13px var(--mono); margin-right:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+  <div id="hv-innehall" hidden>
+    <div id="vy-lista">
+      <h1><b>HALKVAKT</b>Sociala medier</h1>
+      <nav class="undermeny" aria-label="Sociala medier"><a href="social">Regler</a><a href="social-inlagg" aria-current="page">Inlägg</a></nav>
+
+      <div class="ruta">
+        <h2>Kommande</h2>
+        <div class="stor" id="nasta">…</div>
+        <p id="kommande-text">Idag skapas och postas varje inlägg i samma körning, så det finns inga inlägg som väntar och inget att redigera innan de går ut. Larmen kan komma när som helst; de kollas var 30:e minut.</p>
+      </div>
+
+      <div class="sektion ruta">
+        <h2>Senaste</h2>
+        <div id="lista"><p class="meta">Hämtar…</p></div>
+        <p style="margin-top:12px"><button class="liten" type="button" id="fler" hidden>Visa fler</button></p>
+        <div class="fel" id="listfel" role="alert"></div>
+      </div>
+    </div>
+
+    <div id="vy-post" hidden>
+      <div class="verktyg"><button class="liten" type="button" id="tillbaka">Alla inlägg</button></div>
+      <h1 id="p-rubrik"></h1>
+      <p class="meta" id="p-meta"></p>
+      <div class="verktyg" role="tablist" aria-label="Kanal">
+        <button class="flik" role="tab" data-kanal="facebook" aria-selected="true">Facebook</button>
+        <button class="flik" role="tab" data-kanal="instagram" aria-selected="false">Instagram</button>
+        <button class="flik" role="tab" data-kanal="x" aria-selected="false">X</button>
+      </div>
+      <div class="forhand">
+        <div>
+          <div class="bildram"><img id="p-bild" alt=""></div>
+          <div class="bildnav" id="p-bildnav" hidden>
+            <button class="liten" type="button" id="p-forra" aria-label="Förra bilden">←</button>
+            <span class="meta" id="p-bildnr"></span>
+            <button class="liten" type="button" id="p-nasta" aria-label="Nästa bild">→</button>
+          </div>
+        </div>
+        <div class="ruta">
+          <div class="text" id="p-text"></div>
+          <div class="rakna" id="p-rakna"></div>
+          <div class="lankar" id="p-lankar" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="fel" id="postfel" role="alert"></div>
+    </div>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  // The posts live in the public Halkvakt repo: postat.json holds the receipts, inlagg/NAME.json the texts and inlagg/NAME.jpg
+  // (or NAME-01.jpg … for a swipe post) the images. Nothing here is secret, and raw.githubusercontent.com allows the browser to read it.
+  var RAW = "https://raw.githubusercontent.com/Axelstar/halkvakt/main/marknadsforing/";
+  var TZ = "Europe/Stockholm";
+  var TYPER = {
+    smhi: ["SMHI-varning", true], forsta: ["Höstens första", true], forandring: ["Stor förändring", false],
+    kallaste: ["Höstens kallaste", false], vecka: ["Veckan på vägarna", false], svep: ["Svepinlägget", false], lista: ["Morgonlistan", false]
+  };
+  var PASS = { morgon: "morgon", lunch: "lunch", kvall: "kväll", live: "larm" };
+  // The pulse clock starts the three day passes at these UTC times (halkvakt-live.yml).
+  var PASSTIDER = [[4, 50], [10, 50], [15, 50]];
+  var SIDA = 20;
+  var $ = function (id) { return document.getElementById(id); };
+  var alla = [], visade = 0, oppen = null, kanal = "facebook", bildNr = 0, cache = {};
+
+  function tid(iso, med) {
+    var o = { timeZone: TZ, hour: "2-digit", minute: "2-digit" };
+    if (med) { o.weekday = "short"; o.day = "numeric"; o.month = "short"; }
+    return new Date(iso).toLocaleString("sv-SE", o);
+  }
+
+  function nastaPass() {
+    var nu = new Date();
+    for (var d = 0; d < 2; d++) for (var i = 0; i < PASSTIDER.length; i++) {
+      var t = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate() + d, PASSTIDER[i][0], PASSTIDER[i][1]));
+      if (t > nu) return { t: t, namn: ["Morgon", "Lunch", "Kväll"][i] };
+    }
+  }
+
+  function chip(typ) {
+    var t = TYPER[typ] || [typ, false], s = document.createElement("span");
+    s.className = "chip " + (t[1] ? "gul" : "mork"); s.textContent = t[1] ? "Larm · " + t[0] : t[0];
+    return s;
+  }
+
+  function kanalRad(p) {
+    var d = document.createElement("div"); d.className = "kanaler";
+    [["facebook", "FB"], ["instagram", "IG"], ["x", "X"]].forEach(function (k) {
+      var s = document.createElement("span");
+      s.className = "kanal " + (p[k[0]] ? "ja" : "nej"); s.textContent = k[1] + (p[k[0]] ? " ✓" : " –");
+      d.appendChild(s);
+    });
+    return d;
+  }
+
+  function ritaLista() {
+    var l = $("lista");
+    if (!visade) l.textContent = "";
+    alla.slice(visade, visade + SIDA).forEach(function (p) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "post";
+      var img = document.createElement("img"); img.loading = "lazy"; img.alt = ""; img.src = p.bild;
+      var info = document.createElement("div"); info.className = "info";
+      var r1 = document.createElement("div"); r1.className = "rad1";
+      var m = document.createElement("span"); m.className = "meta"; m.textContent = tid(p.tid, true) + " · " + (PASS[p.pass] || p.pass);
+      r1.appendChild(chip(p.typ)); r1.appendChild(m);
+      var rub = document.createElement("span"); rub.className = "rub"; rub.textContent = p.namn;
+      info.appendChild(r1); info.appendChild(rub); info.appendChild(kanalRad(p));
+      b.appendChild(img); b.appendChild(info);
+      b.addEventListener("click", function () { location.hash = p.namn; });
+      l.appendChild(b);
+    });
+    visade = Math.min(alla.length, visade + SIDA);
+    $("fler").hidden = visade >= alla.length;
+    if (!alla.length) l.innerHTML = '<p class="meta">Inga inlägg.</p>';
+  }
+
+  // X gets the Instagram text up to its link line, cut by whole lines to 280 characters, and a short tail (posta.mjs textX).
+  var IG_LANK = "Läget i ditt län uppdateras var 30:e minut. Länken finns i vår profil.";
+  function textX(textIg) {
+    var rader = textIg.split("\n"), slut = rader.indexOf(IG_LANK);
+    var m = textIg.match(/Siffrorna kommer från (.+)\./), kalla = m ? m[1] : "Trafikverkets öppna data";
+    var svans = "\n\nOberoende, inte en del av Trafikverket. Siffrorna från " + kalla + ". Appen och ditt län: länk i profilen.\n\n#halka #halkvakt";
+    var kropp = [];
+    var del = rader.slice(0, slut < 0 ? rader.length : slut);
+    for (var i = 0; i < del.length; i++) {
+      if (Array.from((kropp.concat([del[i]]).join("\n").trim()) + svans).length > 280) break;
+      kropp.push(del[i]);
+    }
+    return kropp.join("\n").trim() + svans;
+  }
+
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function markera(s) {
+    return esc(s).replace(/https?:\/\/[^\s]+/g, function (u) { return '<a href="' + u + '" target="_blank" rel="noopener">' + u + "</a>"; })
+      .replace(/(^|\s)(#[^\s#]+)/g, '$1<span class="tagg">$2</span>');
+  }
+
+  function bilder(p, j) {
+    if (!j.antal) return [RAW + "inlagg/" + p.namn + ".jpg"];
+    var u = [];
+    for (var i = 1; i <= j.antal; i++) u.push(RAW + "inlagg/" + p.namn + "-" + (i < 10 ? "0" : "") + i + ".jpg");
+    return u;
+  }
+
+  function ritaPost() {
+    var p = oppen.p, j = oppen.j;
+    var urls = bilder(p, j), visa = kanal === "x" ? urls.slice(0, 4) : urls;
+    bildNr = Math.min(bildNr, visa.length - 1);
+    $("p-bild").src = visa[bildNr];
+    $("p-bildnav").hidden = visa.length < 2;
+    $("p-bildnr").textContent = (bildNr + 1) + " av " + visa.length + (kanal === "x" && urls.length > 4 ? " (X tar högst 4)" : "");
+    var text = kanal === "facebook" ? j.text : kanal === "instagram" ? (j.textIg || j.text) : textX(j.textIg || j.text);
+    $("p-text").innerHTML = markera(text);
+    $("p-rakna").textContent = Array.from(text).length + " tecken" + (kanal === "x" ? " av 280" : "");
+    document.querySelectorAll(".flik").forEach(function (f) { f.setAttribute("aria-selected", f.dataset.kanal === kanal ? "true" : "false"); });
+    var l = $("p-lankar"); l.textContent = "";
+    if (p.facebook) l.insertAdjacentHTML("beforeend", '<a target="_blank" rel="noopener" href="https://www.facebook.com/' + encodeURIComponent(p.facebook) + '">Öppna på Facebook</a>');
+    if (p.x) l.insertAdjacentHTML("beforeend", '<a target="_blank" rel="noopener" href="https://x.com/i/web/status/' + encodeURIComponent(p.x) + '">Öppna på X</a>');
+    if (!p[kanal]) l.insertAdjacentHTML("beforeend", '<span class="meta">Inlägget nådde inte ' + ({ facebook: "Facebook", instagram: "Instagram", x: "X" })[kanal] + ".</span>");
+  }
+
+  function oppna(namn) {
+    var p = alla.filter(function (x) { return x.namn === namn; })[0];
+    if (!p) { $("vy-post").hidden = true; $("vy-lista").hidden = false; return; }
+    $("vy-lista").hidden = true; $("vy-post").hidden = false; $("postfel").textContent = "";
+    $("p-rubrik").textContent = ""; $("p-rubrik").appendChild(chip(p.typ));
+    $("p-meta").textContent = "Postat " + tid(p.tid, true) + " · " + (PASS[p.pass] || p.pass) + " · " + p.namn;
+    $("p-text").textContent = "Hämtar…"; bildNr = 0;
+    var h = cache[namn] ? Promise.resolve(cache[namn]) : fetch(RAW + "inlagg/" + namn + ".json").then(function (r) { if (!r.ok) throw new Error(); return r.json(); });
+    h.then(function (j) {
+      cache[namn] = j; oppen = { p: p, j: j };
+      var r = document.createElement("span"); r.textContent = " " + (j.rubrik || ""); r.style.marginLeft = "8px";
+      $("p-rubrik").appendChild(r);
+      ritaPost(); window.scrollTo(0, 0);
+    }).catch(function () { $("p-text").textContent = ""; $("postfel").textContent = "Kunde inte hämta inlägget."; });
+  }
+
+  function vag() { var n = decodeURIComponent(location.hash.slice(1)); if (n) oppna(n); else { $("vy-post").hidden = true; $("vy-lista").hidden = false; } }
+
+  HV.sida("social", function () {
+    var n = nastaPass();
+    $("nasta").textContent = "Nästa pass: " + n.namn.toLowerCase() + " " + tid(n.t.toISOString(), true);
+    fetch(RAW + "postat.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (postat) {
+      Object.keys(postat).forEach(function (d) {
+        [].concat(postat[d]).forEach(function (p) { if (!p.kopia) alla.push(p.namn ? p : Object.assign({ namn: d + "-" + p.pass }, p)); });
+      });
+      alla.sort(function (a, b) { return a.tid < b.tid ? 1 : -1; });
+      ritaLista(); vag();
+    }).catch(function () { $("lista").textContent = ""; $("listfel").textContent = "Kunde inte hämta inläggen från GitHub."; });
+  });
+
+  $("fler").addEventListener("click", ritaLista);
+  $("tillbaka").addEventListener("click", function () { history.pushState(null, "", location.pathname); vag(); });
+  window.addEventListener("hashchange", vag);
+  document.querySelectorAll(".flik").forEach(function (f) { f.addEventListener("click", function () { kanal = f.dataset.kanal; ritaPost(); }); });
+  $("p-forra").addEventListener("click", function () { bildNr = Math.max(0, bildNr - 1); ritaPost(); });
+  $("p-nasta").addEventListener("click", function () { bildNr++; ritaPost(); });
+})();
+</script>
+</body>
+</html>

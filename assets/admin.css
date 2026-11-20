@@ -44,3 +44,6 @@ button.liten.rod { color:var(--rod); }
 .anv .rad { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; }
 .anv .knappar { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
 [hidden] { display:none !important; }
+.undermeny { display:flex; gap:4px; margin:-6px 0 18px; border-bottom:1px solid var(--kant); }
+.undermeny a { color:var(--text2); text-decoration:none; font:500 14px var(--sans); padding:10px 12px; min-height:44px; display:flex; align-items:center; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.undermeny a[aria-current="page"] { color:var(--text); border-bottom-color:var(--gul); }
