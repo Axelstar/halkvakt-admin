@@ -60,6 +60,22 @@
   a.pr b { display:block; font-weight:500; }
   a.pr:hover b { color:var(--gul); }
   .fot { margin-top:18px; }
+  #sammanfattning .text { max-width:74ch; overflow-wrap:anywhere; }
+  #sammanfattning .text h2 { font:600 19px var(--sans); color:var(--text); text-transform:none; letter-spacing:-.01em; margin:24px 0 8px; }
+  #sammanfattning .text h2:first-child { margin-top:0; }
+  #sammanfattning .text h3 { font:600 16px var(--sans); margin:18px 0 6px; }
+  #sammanfattning .text ul, #sammanfattning .text ol { padding-left:22px; }
+  #sammanfattning .text li { margin:5px 0; }
+  #sammanfattning .text a { color:var(--gul); }
+  #sammanfattning .text code { font:13px var(--mono); background:var(--mark); border:1px solid var(--kant); border-radius:4px; padding:1px 5px; }
+  #sammanfattning .text blockquote { margin:12px 0; padding:8px 14px; border-left:3px solid var(--gul); color:var(--text2); background:var(--upp); border-radius:0 8px 8px 0; }
+  #sammanfattning .text blockquote p { margin:4px 0; }
+  #sammanfattning .text table { border-collapse:collapse; font-size:14px; min-width:100%; }
+  #sammanfattning .text th, #sammanfattning .text td { border-top:1px dashed var(--skilje); padding:7px 12px 7px 0; text-align:left; vertical-align:top; }
+  #sammanfattning .text th { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.06em; border-top:0; }
+  .tabell { overflow-x:auto; margin:12px 0; }
+  .radknappar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:14px 0; }
+  .radknappar a { color:var(--text2); font:12px var(--mono); }
   iframe { display:block; width:100%; height:calc(100vh - 190px); min-height:480px; border:1px solid var(--kant); border-radius:14px; background:#fff; }
 </style>
 </head>
@@ -70,32 +86,53 @@
   <div id="hv-innehall" hidden>
     <div class="flikar" id="flikar" role="group" aria-label="Dokument"></div>
     <div id="overblick"></div>
+    <div id="sammanfattning" hidden>
+      <h1 id="s-rubrik"></h1>
+      <p class="meta" id="s-meta"></p>
+      <div class="ruta"><div class="text" id="s-text"></div></div>
+      <div class="radknappar"><button class="liten" type="button" id="s-hela">Läs hela dokumentet här</button><a id="s-ny" target="_blank" rel="noopener noreferrer">Öppna hela i egen flik</a><a id="s-andra" hidden>Ändra sammanfattningen</a></div>
+    </div>
     <iframe id="ram" title="Projektkartan" referrerpolicy="no-referrer" hidden></iframe>
     <p class="meta" id="ramnot" hidden>Sidorna byggs en gång per dygn i Bengts repo och visas här som de är. De ligger på en öppen adress och skyddas inte av inloggningen.</p>
   </div>
 </div>
 <script src="assets/admin.js"></script>
+<script src="assets/md.js"></script>
 <script src="assets/projekt.js"></script>
 <script>
 (function () {
   var BAS = "https://895845.github.io/halkvakt-sidor/";
-  var SIDOR = [["", "Överblick"], ["PROJEKTKARTAN", "Hela kartan"], ["SYSTEMBILDEN", "Systembilden"], ["MATNINGAR", "Mätningar"], ["APPEN", "Appen"], ["FAVORITER", "Favoriter"]];
-  var f = document.getElementById("flikar"), ram = document.getElementById("ram"), laddad = false;
-  var ny = document.createElement("a"); ny.target = "_blank"; ny.rel = "noopener noreferrer"; ny.textContent = "Öppna i egen flik";
+  // [page at Bengt's site, tab name, slug of the summary under Mallar och rutiner]
+  var SIDOR = [["", "Överblick", ""], ["SYSTEMBILDEN", "Systembilden", "sammanfattning-systembilden"], ["MATNINGAR", "Mätningar", "sammanfattning-matningar"],
+    ["APPEN", "Appen", "sammanfattning-appen"], ["FAVORITER", "Favoriter", "sammanfattning-favoriter"], ["PROJEKTKARTAN", "Bengts hela karta", ""]];
+  var $ = function (id) { return document.getElementById(id); };
+  var f = $("flikar"), ram = $("ram"), laddad = false, vald = null;
+  function visaRam(s) { ram.src = BAS + s[0] + ".html"; ram.title = s[1]; ram.hidden = false; $("ramnot").hidden = false; }
   function visa(namn) {
     var s = SIDOR.filter(function (x) { return x[0] === namn; })[0] || SIDOR[0];
-    var egen = !s[0], ob = document.getElementById("overblick");
-    ob.hidden = !egen; ram.hidden = egen; document.getElementById("ramnot").hidden = egen; ny.hidden = egen;
-    if (egen) { if (!laddad) { laddad = true; HVProjekt.ladda(ob); } }
-    else { ram.src = BAS + s[0] + ".html"; ram.title = s[1]; ny.href = ram.src; }
+    vald = s;
     [].forEach.call(f.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.dataset.s === s[0] ? "true" : "false"); });
     if (location.hash.slice(1) !== s[0]) history.replaceState(null, "", s[0] ? "#" + s[0] : location.pathname);
+    $("overblick").hidden = !!s[0]; $("sammanfattning").hidden = !s[2]; ram.hidden = true; $("ramnot").hidden = true; ram.removeAttribute("src");
+    if (!s[0]) { if (!laddad) { laddad = true; HVProjekt.ladda($("overblick")); } return; }
+    if (!s[2]) { visaRam(s); return; }
+    $("s-rubrik").textContent = s[1]; $("s-meta").textContent = ""; $("s-text").textContent = "Hämtar…";
+    $("s-ny").href = BAS + s[0] + ".html"; $("s-hela").hidden = false; $("s-andra").hidden = true;
+    HV.api("mallar", { slug: s[2] }).then(function (d) {
+      if (vald !== s) return;
+      $("s-meta").textContent = "Sammanfattning · ändrad " + String(d.andrad || "").slice(0, 10) + (d.andrad_av ? " av " + d.andrad_av : "");
+      $("s-text").innerHTML = HVmd(d.text || "");
+      $("s-andra").href = "mallar#" + s[2]; $("s-andra").hidden = false;
+    }, function (e) {
+      if (vald !== s) return;
+      $("s-text").textContent = e.status === 403 ? "Sammanfattningen ligger under Mallar och rutiner, som ditt konto inte har. Hela dokumentet går att läsa här nedanför." : "Sammanfattningen finns inte än. Hela dokumentet går att läsa här nedanför.";
+    });
   }
+  $("s-hela").addEventListener("click", function () { if (vald) { visaRam(vald); $("s-hela").hidden = true; ram.scrollIntoView({ behavior: "smooth" }); } });
   SIDOR.forEach(function (s) {
     var b = document.createElement("button"); b.type = "button"; b.className = "liten"; b.dataset.s = s[0]; b.textContent = s[1];
     b.addEventListener("click", function () { visa(s[0]); }); f.appendChild(b);
   });
-  f.appendChild(ny);
   HV.sida("projekt", function () { visa(location.hash.slice(1)); });
 })();
 </script>
