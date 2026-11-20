@@ -42,6 +42,14 @@
   .text .tagg { color:#8EC5FF; }
   .rakna { font:12px var(--mono); color:var(--dampad); margin-top:10px; }
   .lankar a { color:var(--gul); font:13px var(--mono); margin-right:14px; }
+  .utkast { display:flex; gap:14px; align-items:center; padding:12px 0; border-top:1px dashed var(--skilje); }
+  .utkast:first-child { border-top:0; padding-top:0; }
+  .utkast img { width:64px; height:80px; object-fit:cover; border-radius:8px; background:var(--upp); flex:none; }
+  .utkast .info { flex:1; min-width:0; }
+  .utkast.slangd img, .utkast.slangd .rub { opacity:.45; }
+  .status { font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+  .status.vantar { color:var(--gul); } .status.slangd { color:var(--rod); }
+  textarea { width:100%; min-height:300px; padding:12px; background:var(--mark); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:14px/1.55 var(--sans); }
 </style>
 </head>
 <body>
@@ -56,7 +64,9 @@
       <div class="ruta">
         <h2>Kommande</h2>
         <div class="stor" id="nasta">…</div>
-        <p id="kommande-text">Idag skapas och postas varje inlägg i samma körning, så det finns inga inlägg som väntar och inget att redigera innan de går ut. Larmen kan komma när som helst; de kollas var 30:e minut.</p>
+        <p>Dagslägets inlägg skapas 30 minuter före passet och kan ändras eller slängas fram till dess. Larmen (SMHI-varning och höstens första) går ut direkt och syns under Senaste.</p>
+        <div id="utkast"><p class="meta">Hämtar…</p></div>
+        <div class="fel" id="utkastfel" role="alert"></div>
       </div>
 
       <div class="sektion ruta">
@@ -92,6 +102,40 @@
         </div>
       </div>
       <div class="fel" id="postfel" role="alert"></div>
+    </div>
+
+    <div id="vy-utkast" hidden>
+      <div class="verktyg"><button class="liten" type="button" id="u-tillbaka">Alla inlägg</button></div>
+      <h1 id="u-rubrik"></h1>
+      <p class="meta" id="u-meta"></p>
+      <div class="verktyg" role="tablist" aria-label="Kanal">
+        <button class="flik" role="tab" data-ukanal="facebook" aria-selected="true">Facebook</button>
+        <button class="flik" role="tab" data-ukanal="instagram" aria-selected="false">Instagram</button>
+        <button class="flik" role="tab" data-ukanal="x" aria-selected="false">X</button>
+      </div>
+      <div class="forhand">
+        <div>
+          <div class="bildram"><img id="u-bild" alt=""></div>
+          <div class="bildnav" id="u-bildnav" hidden>
+            <button class="liten" type="button" id="u-forra" aria-label="Förra bilden">←</button>
+            <span class="meta" id="u-bildnr"></span>
+            <button class="liten" type="button" id="u-nasta" aria-label="Nästa bild">→</button>
+          </div>
+        </div>
+        <div class="ruta">
+          <label for="u-text" id="u-etikett" style="margin-top:0">Text för Facebook</label>
+          <textarea id="u-text"></textarea>
+          <div class="text" id="u-x" hidden></div>
+          <div class="rakna" id="u-rakna"></div>
+          <div class="verktyg" style="margin-top:12px">
+            <button class="gul" type="button" id="u-spara" style="margin-top:0">Spara texterna</button>
+            <button class="liten rod" type="button" id="u-slang">Släng utkastet</button>
+            <button class="liten" type="button" id="u-angra" hidden>Ångra, posta ändå</button>
+          </div>
+          <div class="fel" id="u-fel" role="alert"></div>
+          <div class="klart" id="u-klart" role="status"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -202,7 +246,7 @@
     var text = kanal === "facebook" ? j.text : kanal === "instagram" ? (j.textIg || j.text) : textX(j.textIg || j.text);
     $("p-text").innerHTML = markera(text);
     $("p-rakna").textContent = Array.from(text).length + " tecken" + (kanal === "x" ? " av 280" : "");
-    document.querySelectorAll(".flik").forEach(function (f) { f.setAttribute("aria-selected", f.dataset.kanal === kanal ? "true" : "false"); });
+    document.querySelectorAll("[data-kanal]").forEach(function (f) { f.setAttribute("aria-selected", f.dataset.kanal === kanal ? "true" : "false"); });
     var l = $("p-lankar"); l.textContent = "";
     if (p.facebook) l.insertAdjacentHTML("beforeend", '<a target="_blank" rel="noopener" href="https://www.facebook.com/' + encodeURIComponent(p.facebook) + '">Öppna på Facebook</a>');
     if (p.x) l.insertAdjacentHTML("beforeend", '<a target="_blank" rel="noopener" href="https://x.com/i/web/status/' + encodeURIComponent(p.x) + '">Öppna på X</a>');
@@ -225,24 +269,113 @@
     }).catch(function () { $("p-text").textContent = ""; $("postfel").textContent = "Kunde inte hämta inlägget."; });
   }
 
-  function vag() { var n = decodeURIComponent(location.hash.slice(1)); if (n) oppna(n); else { $("vy-post").hidden = true; $("vy-lista").hidden = false; } }
+  // ---------- The drafts (Halkvakt DECISIONS #917): day posts wait 30 minutes and can be edited or dropped here ----------
+  var utkast = [], u = null, uKanal = "facebook", uBild = 0, uText = {};
+
+  function ritaUtkast() {
+    var l = $("utkast"); l.textContent = "";
+    if (!utkast.length) { l.innerHTML = '<p class="meta">Inga utkast väntar just nu. Nästa skapas 30 minuter före passet, om något har hänt.</p>'; return; }
+    utkast.forEach(function (x) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "post utkast" + (x.status === "slangd" ? " slangd" : "");
+      var img = document.createElement("img"); img.alt = ""; img.src = RAW + "inlagg/" + x.namn + (x.antal ? "-01" : "") + ".jpg";
+      var info = document.createElement("div"); info.className = "info";
+      var r1 = document.createElement("div"); r1.className = "rad1";
+      var st = document.createElement("span"); st.className = "status " + x.status; st.textContent = x.status === "slangd" ? "Slängt" : "Väntar";
+      var m = document.createElement("span"); m.className = "meta"; m.textContent = "postas " + tid(x.postas, true);
+      r1.appendChild(chip(x.typ)); r1.appendChild(st); r1.appendChild(m);
+      var rub = document.createElement("span"); rub.className = "rub"; rub.textContent = x.text.split("\n")[0];
+      info.appendChild(r1); info.appendChild(rub);
+      if (x.andrad) { var a = document.createElement("span"); a.className = "meta"; a.textContent = "ändrat av " + x.andrad_av + " " + tid(x.andrad); info.appendChild(a); }
+      b.appendChild(img); b.appendChild(info);
+      b.addEventListener("click", function () { location.hash = "utkast:" + x.namn; });
+      l.appendChild(b);
+    });
+  }
+
+  function hamtaUtkast() {
+    return HV.api("social").then(function (d) { utkast = d; $("utkastfel").textContent = ""; ritaUtkast(); }, function (e) {
+      utkast = [];
+      $("utkast").innerHTML = e.status === 404 || e.status === 500
+        ? '<p class="meta">Utkasten är inte påslagna än. Tills ändringen i Halkvakt (PR #1719) är godkänd och i drift skapas och postas dagslägets inlägg i samma körning, så inget väntar.</p>'
+        : '<p class="meta">Kunde inte hämta utkasten.</p>';
+    });
+  }
+
+  function ritaU() {
+    var urls = [];
+    if (u.antal) for (var i = 1; i <= u.antal; i++) urls.push(RAW + "inlagg/" + u.namn + "-" + (i < 10 ? "0" : "") + i + ".jpg");
+    else urls.push(RAW + "inlagg/" + u.namn + ".jpg");
+    var visa = uKanal === "x" ? urls.slice(0, 4) : urls;
+    uBild = Math.max(0, Math.min(uBild, visa.length - 1));
+    $("u-bild").src = visa[uBild]; $("u-bildnav").hidden = visa.length < 2;
+    $("u-bildnr").textContent = (uBild + 1) + " av " + visa.length;
+    var x = uKanal === "x", ta = $("u-text");
+    ta.hidden = x; $("u-x").hidden = !x;
+    $("u-etikett").textContent = x ? "X (räknas ur Instagram-texten, ändra den där)" : "Text för " + (uKanal === "facebook" ? "Facebook" : "Instagram");
+    if (x) { var t = textX(uText.instagram); $("u-x").innerHTML = markera(t); $("u-rakna").textContent = Array.from(t).length + " tecken av 280"; }
+    else { ta.value = uText[uKanal]; $("u-rakna").textContent = Array.from(ta.value).length + " tecken"; }
+    document.querySelectorAll("[data-ukanal]").forEach(function (f) { f.setAttribute("aria-selected", f.dataset.ukanal === uKanal ? "true" : "false"); });
+    var vantar = u.status === "vantar";
+    ta.disabled = !vantar; $("u-spara").hidden = !vantar; $("u-slang").hidden = !vantar; $("u-angra").hidden = vantar;
+  }
+
+  function oppnaUtkast(namn) {
+    u = utkast.filter(function (x) { return x.namn === namn; })[0];
+    if (!u) { $("vy-utkast").hidden = true; $("vy-lista").hidden = false; return; }
+    $("vy-lista").hidden = true; $("vy-post").hidden = true; $("vy-utkast").hidden = false;
+    $("u-fel").textContent = ""; $("u-klart").textContent = "";
+    $("u-rubrik").textContent = ""; $("u-rubrik").appendChild(chip(u.typ));
+    var r = document.createElement("span"); r.textContent = " Utkast"; r.style.marginLeft = "8px"; $("u-rubrik").appendChild(r);
+    $("u-meta").textContent = "Postas " + tid(u.postas, true) + " om det inte slängs · " + u.namn + (u.andrad ? " · ändrat av " + u.andrad_av + " " + tid(u.andrad) : "");
+    uText = { facebook: u.text, instagram: u.text_ig }; uKanal = "facebook"; uBild = 0;
+    ritaU(); window.scrollTo(0, 0);
+  }
+
+  function gor(kropp, besked) {
+    $("u-fel").textContent = ""; $("u-klart").textContent = "";
+    kropp.namn = u.namn;
+    return HV.api("social", null, kropp).then(function () {
+      return hamtaUtkast().then(function () { oppnaUtkast(kropp.namn); $("u-klart").textContent = besked; });
+    }, function (e) { $("u-fel").textContent = e.message === "fel" ? "Det gick inte att spara." : e.message.charAt(0).toUpperCase() + e.message.slice(1) + "."; });
+  }
+
+  $("u-text").addEventListener("input", function () { uText[uKanal] = $("u-text").value; $("u-rakna").textContent = Array.from($("u-text").value).length + " tecken"; });
+  document.querySelectorAll("[data-ukanal]").forEach(function (f) { f.addEventListener("click", function () { uKanal = f.dataset.ukanal; ritaU(); }); });
+  $("u-forra").addEventListener("click", function () { uBild--; ritaU(); });
+  $("u-nasta").addEventListener("click", function () { uBild++; ritaU(); });
+  $("u-spara").addEventListener("click", function () { gor({ gor: "spara", text: uText.facebook, textIg: uText.instagram }, "Sparat. Den nya texten postas " + tid(u.postas) + "."); });
+  $("u-slang").addEventListener("click", function () {
+    if (!confirm("Släng utkastet? Inget postas i det här passet.")) return;
+    gor({ gor: "slang" }, "Slängt. Inget postas " + tid(u.postas) + ".");
+  });
+  $("u-angra").addEventListener("click", function () { gor({ gor: "angra" }, "Utkastet väntar igen och postas " + tid(u.postas) + "."); });
+  $("u-tillbaka").addEventListener("click", function () { history.pushState(null, "", location.pathname); vag(); });
+
+  function vag() {
+    var n = decodeURIComponent(location.hash.slice(1));
+    $("vy-utkast").hidden = true;
+    if (n.indexOf("utkast:") === 0) oppnaUtkast(n.slice(7));
+    else if (n) oppna(n);
+    else { $("vy-post").hidden = true; $("vy-lista").hidden = false; }
+  }
 
   HV.sida("social", function () {
     var n = nastaPass();
     $("nasta").textContent = "Nästa pass: " + n.namn.toLowerCase() + " " + tid(n.t.toISOString(), true);
+    var utkastKlara = hamtaUtkast();
     fetch(RAW + "postat.json", { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (postat) {
       Object.keys(postat).forEach(function (d) {
         [].concat(postat[d]).forEach(function (p) { if (!p.kopia) alla.push(p.namn ? p : Object.assign({ namn: d + "-" + p.pass }, p)); });
       });
       alla.sort(function (a, b) { return a.tid < b.tid ? 1 : -1; });
-      ritaLista(); vag();
+      ritaLista(); utkastKlara.then(vag);
     }).catch(function () { $("lista").textContent = ""; $("listfel").textContent = "Kunde inte hämta inläggen från GitHub."; });
   });
 
   $("fler").addEventListener("click", ritaLista);
   $("tillbaka").addEventListener("click", function () { history.pushState(null, "", location.pathname); vag(); });
   window.addEventListener("hashchange", vag);
-  document.querySelectorAll(".flik").forEach(function (f) { f.addEventListener("click", function () { kanal = f.dataset.kanal; ritaPost(); }); });
+  document.querySelectorAll("[data-kanal]").forEach(function (f) { f.addEventListener("click", function () { kanal = f.dataset.kanal; ritaPost(); }); });
   $("p-forra").addEventListener("click", function () { bildNr = Math.max(0, bildNr - 1); ritaPost(); });
   $("p-nasta").addEventListener("click", function () { bildNr++; ritaPost(); });
 })();

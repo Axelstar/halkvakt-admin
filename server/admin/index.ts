@@ -14,6 +14,10 @@
 // GET  ?del=mallar&slug=…               → dokumentet med sin text
 // POST {del:"mallar", gor:"spara", slug, grupp, rubrik, text}
 // POST {del:"mallar", gor:"tabort", slug}
+// GET  ?del=social                     (menyval social) → [{namn, typ, pass, postas, antal, text, text_ig, status, andrad, andrad_av}]
+//                                       utkasten som väntar eller är slängda och inte har postats (Halkvakt sql/130, DECISIONS #917)
+// POST {del:"social", gor:"spara", namn, text, textIg} → ändrar texten i ett utkast som väntar
+// POST {del:"social", gor:"slang" | "angra", namn}     → slänger utkastet, eller tar tillbaka det, fram till passet
 // POST {del:"start", kod, epost, losen} → det första kontot, en gång, mot engångskoden i admin_start. Kräver ingen inloggning.
 const SB = Deno.env.get("SUPABASE_URL")!;
 const SRK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -215,6 +219,40 @@ async function andraMallar(jag: Jag, d: Record<string, unknown>) {
   return fel("okänd åtgärd", 400);
 }
 
+// Halkvakt live's day posts wait 30 minutes as drafts (Halkvakt sql/130, DECISIONS #917). Only a draft whose time has not
+// come can change; once posta.mjs has posted it, the row says postad and is left alone.
+const UTKASTNAMN = /^\d{4}-\d{2}-\d{2}-(morgon|lunch|kvall)$/;
+const MAX_TEXT = 2200;   // Instagram's caption limit; Facebook takes more, but one limit for both keeps them comparable.
+
+async function lasUtkast() {
+  const r = await fetch(`${SB}/rest/v1/social_utkast?select=namn,typ,pass,postas,antal,text,text_ig,status,andrad,andrad_av&status=neq.postad&postas=gt.${new Date(Date.now() - 36e5).toISOString()}&order=postas.asc`, { headers: H });
+  return r.ok ? svar(await r.json()) : fel("kunde inte läsa utkasten", 500);
+}
+
+async function andraUtkast(jag: Jag, d: Record<string, unknown>) {
+  const namn = typeof d.namn === "string" && UTKASTNAMN.test(d.namn) ? d.namn : "";
+  if (!namn) return fel("fel uppgifter", 400);
+  const nu = new Date().toISOString();
+  let andring: Record<string, unknown>, villkor: string;
+  if (d.gor === "spara") {
+    const text = typeof d.text === "string" ? d.text.trim() : "", textIg = typeof d.textIg === "string" ? d.textIg.trim() : "";
+    if (!text || !textIg) return fel("båda texterna behövs", 400);
+    if (text.length > MAX_TEXT || textIg.length > MAX_TEXT) return fel(`högst ${MAX_TEXT} tecken`, 400);
+    andring = { text, text_ig: textIg }; villkor = "status=eq.vantar";
+  } else if (d.gor === "slang") {
+    andring = { status: "slangd" }; villkor = "status=eq.vantar";
+  } else if (d.gor === "angra") {
+    andring = { status: "vantar" }; villkor = "status=eq.slangd";
+  } else return fel("okänd åtgärd", 400);
+  const r = await fetch(`${SB}/rest/v1/social_utkast?namn=eq.${namn}&${villkor}&postas=gt.${nu}`, {
+    method: "PATCH", headers: { ...H, Prefer: "return=representation" },
+    body: JSON.stringify({ ...andring, andrad: nu, andrad_av: jag.epost }),
+  });
+  if (!r.ok) return fel("kunde inte spara", 500);
+  const [rad] = await r.json();
+  return rad ? svar({ klart: true }) : fel("utkastet går inte att ändra längre", 409);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   try {
@@ -234,6 +272,7 @@ Deno.serve(async (req) => {
     if (!jag.menyval.includes(del)) return fel("saknar behörighet", 403);
     if (del === "statistik" && req.method === "GET") return await statistik(u);
     if (del === "anvandare") return req.method === "GET" ? await listaAnvandare() : await andraAnvandare(jag, d);
+    if (del === "social") return req.method === "GET" ? await lasUtkast() : await andraUtkast(jag, d);
     if (del === "mallar") return req.method === "GET" ? await lasMallar(u) : await andraMallar(jag, d);
     return fel("delen är inte byggd än", 404);
   } catch (_e) {

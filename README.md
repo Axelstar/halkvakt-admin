@@ -24,5 +24,5 @@ En ändrad fil här är inte en deploy.
 ## Läget
 
 - Fas 1 (klar): inloggning, användare, statistik.
-- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal. `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
+- Fas 2: sociala medier. `social-inlagg.html` visar de senaste inläggen (ur postat.json och inlagg/ i Halkvakt-repot) med förhandsvisning per kanal, och dagslägets utkast som kan ändras eller slängas före passet (delen `social` i funktionen, tabellen `social_utkast` i Halkvakt sql/130, FÖRSLAG DECISIONS #917, Halkvakt PR #1719: väntar på Bengts ord och är inte i drift). `social.html` visar reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
 - Prioriteringar: tom sida tills innehållet är bestämt.
