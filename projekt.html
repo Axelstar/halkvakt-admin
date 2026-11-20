@@ -14,6 +14,52 @@
   .flikar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
   .flikar button[aria-pressed="true"] { border-color:var(--gul); color:var(--gul); }
   .flikar a { margin-left:auto; color:var(--text2); font:12px var(--mono); padding:8px 0; }
+  #overblick h2.rubrik { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.12em; margin:26px 2px 10px; }
+  #overblick .rad { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  #overblick .tal { font:600 15px var(--mono); white-space:nowrap; }
+  #overblick .om { color:var(--text2); font-size:14px; margin:6px 0 0; display:block; }
+  #overblick p { margin:6px 0 0; }
+  .helhet { display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:center; padding:22px; }
+  .helhet .stort { display:block; font:600 56px/1 var(--mono); letter-spacing:-.03em; color:var(--gul); }
+  .helhet-text p:first-child { font-size:17px; margin:0 0 10px; max-width:60ch; }
+  @media (max-width:620px) { .helhet { grid-template-columns:1fr; gap:12px; } .helhet .stort { font-size:44px; } }
+  .stapel-rad { height:8px; background:var(--upp); border-radius:4px; overflow:hidden; margin-top:8px; }
+  .stapel-rad i { display:block; height:100%; background:var(--gul); border-radius:4px; }
+  .stapel-rad i.g { background:var(--gron); }
+  .malen { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px; }
+  .malen .ruta { margin:0; }
+  .malnamn { font:600 16px var(--sans); }
+  .klart { color:var(--gron); font-size:13px; }
+  details > summary { cursor:pointer; list-style:none; }
+  details > summary::-webkit-details-marker { display:none; }
+  details.kvar { margin-top:10px; border-top:1px dashed var(--skilje); padding-top:8px; }
+  details.kvar > summary { font:12px var(--mono); color:var(--gul); min-height:32px; display:flex; align-items:center; }
+  details.block > summary .malnamn::before { content:"+ "; color:var(--dampad); font-family:var(--mono); }
+  details.block[open] > summary .malnamn::before { content:"− "; }
+  .hinder { padding:8px 0; border-top:1px dashed var(--skilje); }
+  .hinder b { font-weight:500; margin-left:6px; }
+  .chip { display:inline-block; font:600 10px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding:3px 7px; border-radius:10px; white-space:nowrap; vertical-align:1px; }
+  .chip.gron { background:#12261B; color:#4CC382; } .chip.orange { background:#2A2310; color:var(--gul); } .chip.bla { background:#13222F; color:#7DB8F0; }
+  .chip.rod { background:#2B1714; color:var(--rod); } .chip.gra { background:var(--upp); color:var(--dampad); }
+  details.block { margin-top:10px; }
+  details.delrad { border-top:1px dashed var(--skilje); }
+  details.block > details.delrad:first-of-type { margin-top:14px; }
+  details.delrad > summary { display:flex; align-items:center; gap:10px; padding:10px 0; min-height:44px; }
+  details.delrad > summary .namn { flex:1; }
+  details.delrad[open] > summary .namn { color:var(--gul); }
+  .inne { padding:0 0 14px; max-width:78ch; overflow-wrap:anywhere; }
+  .inne h4 { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.08em; margin:12px 0 4px; }
+  .inne ul { margin:0; padding-left:20px; font-size:14px; color:var(--text2); }
+  .inne li { margin:4px 0; }
+  .inne ul.steg { list-style:none; padding-left:0; }
+  .inne ul.steg li::before { content:"○ "; color:var(--dampad2); }
+  .inne ul.steg li.s-klar::before { content:"● "; color:var(--gron); }
+  .inne ul.steg li.s-pagar::before { content:"◐ "; color:var(--gul); }
+  a.pr { display:block; text-decoration:none; color:var(--text); padding:10px 0; border-top:1px dashed var(--skilje); }
+  a.pr:first-child { border-top:0; padding-top:0; }
+  a.pr b { display:block; font-weight:500; }
+  a.pr:hover b { color:var(--gul); }
+  .fot { margin-top:18px; }
   iframe { display:block; width:100%; height:calc(100vh - 190px); min-height:480px; border:1px solid var(--kant); border-radius:14px; background:#fff; }
 </style>
 </head>
@@ -23,22 +69,27 @@
   <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
   <div id="hv-innehall" hidden>
     <div class="flikar" id="flikar" role="group" aria-label="Dokument"></div>
-    <iframe id="ram" title="Projektkartan" referrerpolicy="no-referrer"></iframe>
-    <p class="meta">Sidorna byggs en gång per dygn i Bengts repo och visas här som de är. De ligger på en öppen adress och skyddas inte av inloggningen.</p>
+    <div id="overblick"></div>
+    <iframe id="ram" title="Projektkartan" referrerpolicy="no-referrer" hidden></iframe>
+    <p class="meta" id="ramnot" hidden>Sidorna byggs en gång per dygn i Bengts repo och visas här som de är. De ligger på en öppen adress och skyddas inte av inloggningen.</p>
   </div>
 </div>
 <script src="assets/admin.js"></script>
+<script src="assets/projekt.js"></script>
 <script>
 (function () {
   var BAS = "https://895845.github.io/halkvakt-sidor/";
-  var SIDOR = [["PROJEKTKARTAN", "Projektkartan"], ["SYSTEMBILDEN", "Systembilden"], ["MATNINGAR", "Mätningar"], ["APPEN", "Appen"], ["FAVORITER", "Favoriter"]];
-  var f = document.getElementById("flikar"), ram = document.getElementById("ram");
+  var SIDOR = [["", "Överblick"], ["PROJEKTKARTAN", "Hela kartan"], ["SYSTEMBILDEN", "Systembilden"], ["MATNINGAR", "Mätningar"], ["APPEN", "Appen"], ["FAVORITER", "Favoriter"]];
+  var f = document.getElementById("flikar"), ram = document.getElementById("ram"), laddad = false;
   var ny = document.createElement("a"); ny.target = "_blank"; ny.rel = "noopener noreferrer"; ny.textContent = "Öppna i egen flik";
   function visa(namn) {
     var s = SIDOR.filter(function (x) { return x[0] === namn; })[0] || SIDOR[0];
-    ram.src = BAS + s[0] + ".html"; ram.title = s[1]; ny.href = ram.src;
+    var egen = !s[0], ob = document.getElementById("overblick");
+    ob.hidden = !egen; ram.hidden = egen; document.getElementById("ramnot").hidden = egen; ny.hidden = egen;
+    if (egen) { if (!laddad) { laddad = true; HVProjekt.ladda(ob); } }
+    else { ram.src = BAS + s[0] + ".html"; ram.title = s[1]; ny.href = ram.src; }
     [].forEach.call(f.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.dataset.s === s[0] ? "true" : "false"); });
-    if (location.hash.slice(1) !== s[0]) history.replaceState(null, "", "#" + s[0]);
+    if (location.hash.slice(1) !== s[0]) history.replaceState(null, "", s[0] ? "#" + s[0] : location.pathname);
   }
   SIDOR.forEach(function (s) {
     var b = document.createElement("button"); b.type = "button"; b.className = "liten"; b.dataset.s = s[0]; b.textContent = s[1];
