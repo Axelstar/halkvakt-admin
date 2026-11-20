@@ -24,5 +24,5 @@ En ändrad fil här är inte en deploy.
 ## Läget
 
 - Fas 1 (klar): inloggning, användare, statistik.
-- Fas 2: sociala medier (regler, utkast, publicering, konkurrenternas inlägg).
+- Fas 2: sociala medier. Sidan visar nu reglerna som de står i posta.mjs (läst 20/11, Halkvakt 176bc07), utan att kunna ändra dem. Kvar: reglerna i databasen, utkast, publicering, konkurrenternas inlägg.
 - Prioriteringar: tom sida tills innehållet är bestämt.

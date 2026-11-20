@@ -9,6 +9,33 @@
 <link rel="icon" href="favicon.png">
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="assets/admin.css">
+<style>
+  .ruta h2 { margin-top:4px; }
+  .ruta p { margin:0 0 10px; max-width:74ch; }
+  .ruta p:last-child { margin-bottom:0; }
+  .tabell { overflow-x:auto; }
+  table { border-collapse:collapse; font-size:14px; width:100%; }
+  th, td { border-top:1px dashed var(--skilje); padding:9px 14px 9px 0; text-align:left; vertical-align:top; }
+  th { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.06em; border-top:0; padding-top:0; }
+  td.v { font:600 15px var(--mono); white-space:nowrap; }
+  td.nr { font:600 13px var(--mono); color:var(--dampad); width:28px; }
+  .chip { display:inline-block; font:600 11px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:6px; white-space:nowrap; }
+  .chip.gul { background:var(--gul); color:var(--mark); }
+  .chip.mork { background:var(--upp); color:var(--text2); border:1px solid var(--kant); }
+  .lagen { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; }
+  .lagen .ruta + .ruta { margin-top:0; }
+  .stor { font:600 28px/1.1 var(--mono); letter-spacing:-.02em; margin:4px 0 6px; }
+  ul.punkter { margin:0; padding-left:20px; max-width:74ch; }
+  ul.punkter li { margin:5px 0; }
+  code { font:13px var(--mono); background:var(--mark); border:1px solid var(--kant); border-radius:4px; padding:1px 5px; }
+  .typ { padding:14px 0; border-top:1px dashed var(--skilje); }
+  .typ:first-of-type { border-top:0; padding-top:4px; }
+  .typ .rad { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .typ b { font:600 16px var(--sans); }
+  .typ p { color:var(--text2); }
+  .exempel { font:13px/1.5 var(--mono); color:var(--text2); background:var(--mark); border:1px solid var(--kant); border-radius:8px; padding:10px 12px; white-space:pre-wrap; margin:6px 0 0; }
+  .sektion { margin-top:22px; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -16,7 +43,160 @@
   <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
   <div id="hv-innehall" hidden>
     <h1><b>HALKVAKT</b>Sociala medier</h1>
-    <p class="ingress">Den här sidan byggs i nästa steg: reglerna för postningen, utkasten och konkurrenternas senaste inlägg. Tills dess postas inläggen som förut.</p>
+    <p class="ingress">Så här postar Halkvakt idag. Allt sker automatiskt, utan att någon granskar inlägget först. Reglerna står som fasta värden i koden (<code>marknadsforing/posta.mjs</code> i Halkvakt-repot), så den här sidan visar dem men kan inte ändra dem än.</p>
+    <p class="meta">Läst ur koden 20 november 2026, Halkvakt-repot commit 176bc07.</p>
+
+    <div class="sektion lagen">
+      <div class="ruta">
+        <h2>Dagsläget</h2>
+        <div class="stor">3 pass</div>
+        <p>Morgon, lunch och kväll: 05.50, 11.50 och 16.50 vintertid (06.50, 12.50 och 17.50 sommartid). Varje pass postar högst ett inlägg, och bara om något har hänt.</p>
+      </div>
+      <div class="ruta">
+        <h2>Larmen</h2>
+        <div class="stor">var 30:e min</div>
+        <p>Kollas varje halvtimme (:07 och :37), strax efter att halkläget uppdaterats. Postas så fort det händer och tar ingen av dagslägets platser.</p>
+      </div>
+      <div class="ruta">
+        <h2>Kanaler</h2>
+        <div class="stor">FB · IG · X</div>
+        <p>Facebook-sidan först, sedan Instagram, sedan X. Samma bild, men texten anpassas efter kanalen.</p>
+      </div>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Spärrarna</h2>
+      <div class="tabell"><table>
+        <thead><tr><th>Regel</th><th>Värde</th><th>Vad den gör</th></tr></thead>
+        <tbody>
+          <tr><td>Inlägg per dygn, dagsläget</td><td class="v">3</td><td>Högst tre dagslägesinlägg per dygn. Larmen räknas inte hit.</td></tr>
+          <tr><td>Tid mellan dagslägesinlägg</td><td class="v">4 h</td><td>Minst fyra timmar sedan förra dagslägesinlägget.</td></tr>
+          <tr><td>Larm per dygn</td><td class="v">4</td><td>Högst fyra larm per dygn, så att en stormdag med tio SMHI-varningar inte blir tio inlägg i rad.</td></tr>
+          <tr><td>Samma sak igen</td><td class="v">20 h</td><td>Samma sorts inlägg för samma län, eller samma SMHI-varning, postas högst en gång per 20 timmar. 20 och inte 24 så att morgonpasset inte fastnar på att det var en minut för tidigt.</td></tr>
+          <tr><td>Svepinlägget</td><td class="v">1 per pass</td><td>Högst ett svepinlägg per pass och dag.</td></tr>
+          <tr><td>Gammal data</td><td class="v">2 h</td><td>Är halkläget äldre än två timmar postas ingenting.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Vad som vinner</h2>
+      <p>Varje körning väljer en enda vinnare, i ordningen nedan. Det som förlorar köas inte utan släpps. Är spärren nådd postas ingenting alls.</p>
+      <div class="tabell"><table>
+        <thead><tr><th></th><th>Larmen (var 30:e min)</th><th></th><th>Dagsläget (morgon, lunch, kväll)</th></tr></thead>
+        <tbody>
+          <tr><td class="nr">1</td><td>SMHI-varning</td><td class="nr">1</td><td>Stor förändring sedan i går</td></tr>
+          <tr><td class="nr">2</td><td>Höstens första</td><td class="nr">2</td><td>Höstens kallaste</td></tr>
+          <tr><td class="nr"></td><td></td><td class="nr">3</td><td>Veckan på vägarna (söndag kväll)</td></tr>
+          <tr><td class="nr"></td><td></td><td class="nr">4</td><td>Svepinlägget, när inget annat har hänt</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>När ett län är med</h2>
+      <ul class="punkter">
+        <li>Ett län räknas när Trafikverket rapporterar halka på <b>minst 1 vägavsnitt</b> eller <b>minst 3 stationer</b> visar vägbana på 0 °C eller kallare.</li>
+        <li>Länen sorteras efter mest halka, sedan flest kalla stationer.</li>
+        <li>Texten tar med högst <b>5 län</b>, och resten blir en rad: <i>Halka eller minusgrader även i N län till.</i></li>
+        <li>Bilden visar 5 län, eller 3 när den har ett stort tal eller ett varningskort. Svepinlägget visar upp till 8 län.</li>
+        <li>Är inget län med och inget larm har gått blir det inget inlägg. Fria vägar är ingen nyhet.</li>
+      </ul>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Inläggstyperna</h2>
+      <p>Exemplen är början på riktiga inlägg som har gått ut.</p>
+
+      <div class="typ">
+        <div class="rad"><span class="chip gul">Larm</span><b>SMHI-varning</b></div>
+        <p>SMHI har en varning för snö, underkylt regn, isbeläggning, ishalka eller halka. Varningar till havs tas inte med. Varje varning (händelse, område och nivå) postas en gång per 20 timmar. Finns det fler varningar räknas de upp i texten i stället för att få egna inlägg.</p>
+        <div class="exempel">19/11 kl. 16.37:
+SMHI har utfärdat en gul varning för snöfall i Delar av Östra Svealand.
+
+Halkläget kl. 16:30:
+Norrbotten: halka på 57 av 58 vägavsnitt, 52 stationer under noll, kallast −6,6 °C vid Merkenäs V, 2 olyckor.</div>
+      </div>
+
+      <div class="typ">
+        <div class="rad"><span class="chip gul">Larm</span><b>Höstens första</b></div>
+        <p>Ett län får halka eller minusgrader på vägbanan för första gången den här säsongen (säsongen börjar 1 september). Flera län samma gång blir ett inlägg. Varje län kan bara få det här inlägget en gång.</p>
+        <div class="exempel">6/11 kl. 06.07:
+I natt kom höstens första halka i Gotland.
+
+Gotland: halka på 6 av 10 vägavsnitt, 2 stationer under noll, kallast −0,3 °C vid Alskog.
+
+Kör efter väglaget, inte efter vanan.</div>
+      </div>
+
+      <div class="typ">
+        <div class="rad"><span class="chip mork">Dagsläge</span><b>Stor förändring sedan i går</b></div>
+        <p>Jämfört med samma tid i går (en mätning 20–28 timmar bakåt): halkan har minst fördubblats <b>och</b> ökat med minst 10 vägavsnitt, <b>eller</b> minst 2 län har fått ny halka.</p>
+        <div class="exempel">19/11, lunch:
+Trafikverket rapporterar halka på 369 vägavsnitt, mot 243 vid samma tid i går.
+Ny halka sedan i går: Uppsala län, Kronoberg och Halland.</div>
+      </div>
+
+      <div class="typ">
+        <div class="rad"><span class="chip mork">Dagsläge</span><b>Höstens kallaste</b></div>
+        <p>Den kallaste vägbanan just nu är minst 0,5 °C kallare än säsongens hittills lägsta, och högst −3 °C.</p>
+        <div class="exempel">11/11, lunch:
+−12,4 °C på vägbanan vid Kätkesuando i Norrbotten kl. 11:30.
+Det är höstens kallaste vägbana hittills i Halkvakts mätningar. Förra lägsta var −11,7 °C vid Kätkesuando.</div>
+      </div>
+
+      <div class="typ">
+        <div class="rad"><span class="chip mork">Dagsläge</span><b>Veckan på vägarna</b></div>
+        <p>Bara söndagens kvällspass. Kräver minst 5 dagar med mätningar under veckan, och minst en dag med halka eller minusgrader. Bilden är ett stapeldiagram med halkan per dag.</p>
+        <div class="exempel">15/11, kväll:
+Veckan på vägarna: halka rapporterades 7 av 7 dagar.
+Mest halka i fredags: 423 vägavsnitt.
+Kallast: −16,1 °C på vägbanan vid Kätkesuando (Norrbotten) i fredags.</div>
+      </div>
+
+      <div class="typ">
+        <div class="rad"><span class="chip mork">Dagsläge</span><b>Svepinlägget</b></div>
+        <p>Postas när inget av ovanstående har hänt men minst ett län är med. Det är ett karusellinlägg: omslaget med länen, ett gult kort per län (högst 8) och appen sist, alltså högst 10 bilder. På X går bara de fyra första bilderna med.</p>
+        <div class="exempel">I morse, 20/11:
+Halkläget kl. 05:30, fredag 20 november: halka på 429 vägavsnitt i 16 län. Svep för att se ditt län.
+
+Norrbotten: halka på 57 av 58 vägavsnitt, 56 stationer under noll, kallast −10,7 °C vid Merkenäs V.
+…</div>
+      </div>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Texten per kanal</h2>
+      <div class="tabell"><table>
+        <thead><tr><th>Kanal</th><th>Länkar</th><th>Övrigt</th></tr></thead>
+        <tbody>
+          <tr><td>Facebook</td><td>Klickbara: halkvakt.se/lan och App Store-länken i varje inlägg.</td><td>Postas först. Faller Instagram efteråt postas Facebook inte en gång till.</td></tr>
+          <tr><td>Instagram</td><td><i>Länken finns i vår profil</i>, eftersom Instagram inte gör länkar klickbara.</td><td>Svepinlägget blir en karusell.</td></tr>
+          <tr><td>X</td><td>Inga länkar. Ett inlägg med länk kostar ungefär tretton gånger mer på X.</td><td>Instagram-texten kortad till 280 tecken med en kort svans. Högst 4 bilder.</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:12px">Alla inlägg slutar likadant: länkraden, appraden och <i>Halkvakt är en oberoende app och sajt, inte en del av Trafikverket. Siffrorna kommer från …</i> Sist kommer taggarna <code>#halka #väglag</code>, en tagg per län och <code>#halkvakt</code>.</p>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Bilden</h2>
+      <ul class="punkter">
+        <li>1080 × 1350 pixlar, enligt varumärkesguiden och de sociala mallarna.</li>
+        <li><b>Gul yta</b> bara för larmen (SMHI-varning och höstens första). Allt annat är mörkt med gul accent.</li>
+        <li>Källan och halkvakt.se/lan står i foten.</li>
+      </ul>
+    </div>
+
+    <div class="sektion ruta">
+      <h2>Var det styrs</h2>
+      <ul class="punkter">
+        <li><code>marknadsforing/posta.mjs</code> innehåller alla regler och texter ovan.</li>
+        <li><code>.github/workflows/halkvakt-live.yml</code> kör dagsläget och <code>halkvakt-larm.yml</code> larmen. Båda startas av pulsklockan.</li>
+        <li><code>marknadsforing/postat.json</code> är kvittona som spärrarna räknar på.</li>
+        <li>Besluten: DECISIONS #598–#601 (flödet, spärrarna och länkarna), #610 (oberoende-raden), #622 (#halkvakt sist), #626 (bilden), #627 (larmen), #645 (X) och #777 (svepinlägget).</li>
+      </ul>
+      <p style="margin-top:12px">En ändring av någon regel här kräver idag en ändring i koden och ett beslut i DECISIONS. Nästa steg är att flytta reglerna till databasen så att de går att ändra på den här sidan.</p>
+    </div>
   </div>
 </div>
 <script src="assets/admin.js"></script>
