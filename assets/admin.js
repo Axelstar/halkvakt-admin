@@ -6,7 +6,11 @@
   var NYCKEL = "sb_publishable_FGhyCVl0gSpMh21o1BJGMg_bqxvCs1k";
   var API = SB + "/functions/v1/admin";
   var LAGER = "hv-admin";
-  var MENY = [["statistik", "Statistik"], ["social", "Sociala medier"], ["mallar", "Mallar och rutiner"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
+  var MENY = [["statistik", "Statistik"], ["social", "Sociala medier"], ["mallar", "Mallar och rutiner"], ["projekt", "Projektet"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
+
+  // Menu choices every signed-in user gets. They only show pages that are already public elsewhere, so the API has no data to guard.
+  var OPPNA = ["projekt"];
+  function far(jag, val) { return OPPNA.indexOf(val) >= 0 || jag.menyval.indexOf(val) >= 0; }
 
   function las() { try { return JSON.parse(localStorage.getItem(LAGER) || "null"); } catch (e) { return null; } }
   function spara(s) { try { if (s) localStorage.setItem(LAGER, JSON.stringify(s)); else localStorage.removeItem(LAGER); } catch (e) {} }
@@ -70,7 +74,7 @@
     if (!sida) hem.setAttribute("aria-current", "page");
     n.appendChild(hem);
     MENY.forEach(function (m) {
-      if (jag.menyval.indexOf(m[0]) < 0) return;
+      if (!far(jag, m[0])) return;
       var a = document.createElement("a"); a.href = m[0]; a.textContent = m[1];
       if (m[0] === sida) a.setAttribute("aria-current", "page");
       n.appendChild(a);
@@ -87,14 +91,14 @@
     api("jag").then(function (jag) {
       ritaMeny(jag, namn);
       var inne = document.getElementById("hv-innehall"), nej = document.getElementById("hv-nej");
-      if (namn && jag.menyval.indexOf(namn) < 0) { if (nej) nej.hidden = false; return; }
+      if (namn && !far(jag, namn)) { if (nej) nej.hidden = false; return; }
       if (inne) inne.hidden = false;
       if (fn) fn(jag);
     }).catch(function () {});
   }
 
   window.HV = {
-    MENY: MENY, API: API,
+    MENY: MENY, API: API, far: far,
     inloggad: function () { return !!las(); },
     loggaIn: function (epost, losen) { return auth("password", { email: epost, password: losen }); },
     start: function (kod, epost, losen) {

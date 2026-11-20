@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Projektet · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+<style>
+  .wrap { max-width:1200px; }
+  .flikar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .flikar button[aria-pressed="true"] { border-color:var(--gul); color:var(--gul); }
+  .flikar a { margin-left:auto; color:var(--text2); font:12px var(--mono); padding:8px 0; }
+  iframe { display:block; width:100%; height:calc(100vh - 190px); min-height:480px; border:1px solid var(--kant); border-radius:14px; background:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+  <div id="hv-innehall" hidden>
+    <div class="flikar" id="flikar" role="group" aria-label="Dokument"></div>
+    <iframe id="ram" title="Projektkartan" referrerpolicy="no-referrer"></iframe>
+    <p class="meta">Sidorna byggs en gång per dygn i Bengts repo och visas här som de är. De ligger på en öppen adress och skyddas inte av inloggningen.</p>
+  </div>
+</div>
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var BAS = "https://895845.github.io/halkvakt-sidor/";
+  var SIDOR = [["PROJEKTKARTAN", "Projektkartan"], ["SYSTEMBILDEN", "Systembilden"], ["MATNINGAR", "Mätningar"], ["APPEN", "Appen"], ["FAVORITER", "Favoriter"]];
+  var f = document.getElementById("flikar"), ram = document.getElementById("ram");
+  var ny = document.createElement("a"); ny.target = "_blank"; ny.rel = "noopener noreferrer"; ny.textContent = "Öppna i egen flik";
+  function visa(namn) {
+    var s = SIDOR.filter(function (x) { return x[0] === namn; })[0] || SIDOR[0];
+    ram.src = BAS + s[0] + ".html"; ram.title = s[1]; ny.href = ram.src;
+    [].forEach.call(f.querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", b.dataset.s === s[0] ? "true" : "false"); });
+    if (location.hash.slice(1) !== s[0]) history.replaceState(null, "", "#" + s[0]);
+  }
+  SIDOR.forEach(function (s) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "liten"; b.dataset.s = s[0]; b.textContent = s[1];
+    b.addEventListener("click", function () { visa(s[0]); }); f.appendChild(b);
+  });
+  f.appendChild(ny);
+  HV.sida("projekt", function () { visa(location.hash.slice(1)); });
+})();
+</script>
+</body>
+</html>

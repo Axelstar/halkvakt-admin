@@ -44,7 +44,7 @@
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var TEXT = { statistik: "Besök på halkvakt.se, appen och annonserna.", social: "Inlägg, regler och utkast.", mallar: "Inläggsmallar, mejlmallar och hur rutinerna går.", prioriteringar: "Vad som görs nu och sedan.", anvandare: "Konton och vem som ser vad." };
+  var TEXT = { statistik: "Besök på halkvakt.se, appen och annonserna.", social: "Inlägg, regler och utkast.", mallar: "Inläggsmallar, mejlmallar och hur rutinerna går.", projekt: "Projektkartan och stomdokumenten.", prioriteringar: "Vad som görs nu och sedan.", anvandare: "Konton och vem som ser vad." };
   var kod = /^#start=(.+)$/.exec(location.hash);
 
   function visaInne() {
@@ -53,14 +53,14 @@
       $("inne").hidden = false;
       var k = $("kort"); k.textContent = "";
       HV.MENY.forEach(function (m) {
-        if (jag.menyval.indexOf(m[0]) < 0) return;
+        if (!HV.far(jag, m[0])) return;
         var a = document.createElement("a"); a.href = m[0];
         var r = document.createElement("div"); r.className = "ruta";
         var b = document.createElement("b"); b.textContent = m[1];
         var s = document.createElement("span"); s.textContent = TEXT[m[0]];
         r.appendChild(b); r.appendChild(s); a.appendChild(r); k.appendChild(a);
       });
-      $("tomt").hidden = jag.menyval.length > 0;
+      $("tomt").hidden = true;
     });
   }
 
