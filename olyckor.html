@@ -165,7 +165,7 @@
       <p class="exempel" id="of-exempel" hidden>Exempeldata. Siffrorna är påhittade när admin-funktionen inte svarar på delen olyckor.</p>
       <p class="ingress">Varje olycka som Trafikverket rapporterat sedan <span id="of-fran">6/11</span>, och vad Halkvakt sa på platsen när den började. Olyckan är facit för varningarna, inte för vägen.</p>
       <div class="tal of-tal">
-        <div class="ruta"><span>Halkkopplade olyckor</span><b id="of-halk">–</b><small>tydlig eller trolig koppling till halka</small></div>
+        <div class="ruta"><span>Halkkopplade olyckor</span><b id="of-halk">–</b><small id="of-halk-s">tydlig eller trolig koppling till halka</small></div>
         <div class="ruta"><span>Rätt varning</span><b class="of-gron" id="of-ratt">–</b><small id="of-ratt-s">Halkvakt hade en aktiv varning på platsen</small></div>
         <div class="ruta"><span>Missar</span><b class="of-rod" id="of-miss">–</b><small id="of-miss-s">Halkvakt teg</small></div>
       </div>
@@ -175,6 +175,8 @@
         <div class="ruta"><h2>Hur ofta Halkvakt varnade, per klass</h2><table id="of-namnare"></table>
           <p class="forklaring">Nämnaren. Det är inte en träffsäkerhet, men den visar var varningarna hamnar.</p></div>
       </div>
+      <div class="ruta"><h2>Därför är de oklara</h2><table id="of-oklara"></table>
+        <p class="forklaring" id="of-oklara-text">En oklar olycka är varken trolig halka eller för varm. Raderna följer klassningens regler i ordning.</p></div>
       <div class="ruta"><h2>Missarna, senaste 30 dygnen</h2><table id="of-missar" class="of-miss"></table></div>
       <div class="ruta"><h2>Vecka för vecka</h2>
         <div class="of-veckor" id="of-veckor"></div><div class="of-axel" id="of-axel"></div>
@@ -210,7 +212,9 @@
       { vecka: "2026-V46", "RÄTT VARNING": 8, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 18, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 70 },
       { vecka: "2026-V47", "RÄTT VARNING": 11, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 31, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 49 }],
     lagren: [{ rad: "Både A1 och K", senaste: 4, sasong: 11 }, { rad: "Bara A1", senaste: 2, sasong: 5 }, { rad: "Bara K", senaste: 1, sasong: 4 },
-      { rad: "Varken A1 eller K, men ett annat lager", senaste: 0, sasong: 1 }, { rad: "Inget lager", senaste: 3, sasong: 17 }] };
+      { rad: "Varken A1 eller K, men ett annat lager", senaste: 0, sasong: 1 }, { rad: "Inget lager", senaste: 3, sasong: 17 }],
+    oklara: [{ skal: "Ingen station inom 15 km", olyckor: 16, varnade: 6 }, { skal: "Ytan mellan 0 och +3 °C", olyckor: 120, varnade: 5 },
+      { skal: "Kall yta, men texten säger inte hur olyckan gick till", olyckor: 30, varnade: 17 }, { skal: "Kall yta, men ingen fukt eller rimfrost vid stationen", olyckor: 24, varnade: 13 }] };
 
   var ofHamtad = false;
   function ofEsc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -221,11 +225,19 @@
     var s = v.sasong;
     $("of-fran").textContent = ofDag(v.fran);
     $("of-halk").textContent = s.halkkopplade;
+    $("of-halk-s").textContent = "av " + s.olyckor + " olyckor (" + ofPro(s.halkkopplade, s.olyckor) + "), med tydlig eller trolig koppling till halka";
     $("of-ratt").textContent = s.ratt;
     $("of-ratt-s").textContent = ofPro(s.ratt, s.halkkopplade) + " av de halkkopplade hade en aktiv varning på platsen";
     $("of-miss").textContent = s.missar;
     $("of-miss-s").textContent = "Halkvakt teg" + (s.kollisioner ? ", varav " + s.kollisioner + " kollisioner" : "");
 
+    if (v.oklara) {
+      var okl = v.oklara.reduce(function (a, r) { return a + r.olyckor; }, 0), okv = v.oklara.reduce(function (a, r) { return a + r.varnade; }, 0);
+      $("of-oklara").innerHTML = '<tr><td class="meta">Skäl</td><td class="n meta">Olyckor</td><td class="n meta">Varnade</td></tr>' + v.oklara.map(function (r) {
+        return '<tr><td class="namn">' + ofEsc(r.skal) + '<div class="bar" style="background:var(--dampad2);width:' + (okl ? 100 * r.olyckor / okl : 0) + '%"></div></td><td class="n">' + r.olyckor +
+          '</td><td class="n">' + r.varnade + ' <span class="meta">' + ofPro(r.varnade, r.olyckor) + "</span></td></tr>";
+      }).join("") + '<tr><td class="namn"><b>Alla oklara</b></td><td class="n"><b>' + okl + '</b></td><td class="n"><b>' + okv + '</b> <span class="meta">' + ofPro(okv, okl) + "</span></td></tr>";
+    }
     var maxO = Math.max.apply(null, v.omraden.map(function (o) { return o.missar; }).concat([1]));
     $("of-omraden").innerHTML = v.omraden.length ? v.omraden.map(function (o) {
       return '<tr><td class="namn">' + ofEsc(o.omrade) + '<div class="bar" style="background:#FF8A7A;width:' + (100 * o.missar / maxO) + '%"></div></td><td class="n">' + o.missar + "</td></tr>";
