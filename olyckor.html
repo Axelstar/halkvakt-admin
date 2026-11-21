@@ -165,7 +165,7 @@
       <p class="exempel" id="of-exempel" hidden>Exempeldata. Siffrorna är påhittade när admin-funktionen inte svarar på delen olyckor.</p>
       <p class="ingress">Varje olycka som Trafikverket rapporterat sedan <span id="of-fran">6/11</span>, och vad Halkvakt sa på platsen när den började. Olyckan är facit för varningarna, inte för vägen.</p>
       <div class="tal of-tal">
-        <div class="ruta"><span>Halkkopplade olyckor</span><b id="of-halk">–</b><small>tydlig eller trolig koppling till halka</small></div>
+        <div class="ruta"><span>Halkkopplade olyckor</span><b id="of-halk">–</b><small id="of-halk-s">tydlig eller trolig koppling till halka</small></div>
         <div class="ruta"><span>Rätt varning</span><b class="of-gron" id="of-ratt">–</b><small id="of-ratt-s">Halkvakt hade en aktiv varning på platsen</small></div>
         <div class="ruta"><span>Missar</span><b class="of-rod" id="of-miss">–</b><small id="of-miss-s">Halkvakt teg</small></div>
       </div>
@@ -221,6 +221,7 @@
     var s = v.sasong;
     $("of-fran").textContent = ofDag(v.fran);
     $("of-halk").textContent = s.halkkopplade;
+    $("of-halk-s").textContent = "av " + s.olyckor + " olyckor (" + ofPro(s.halkkopplade, s.olyckor) + "), med tydlig eller trolig koppling till halka";
     $("of-ratt").textContent = s.ratt;
     $("of-ratt-s").textContent = ofPro(s.ratt, s.halkkopplade) + " av de halkkopplade hade en aktiv varning på platsen";
     $("of-miss").textContent = s.missar;
