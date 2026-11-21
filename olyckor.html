@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Olyckor · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<style>
+  :root { --mark:#080B0D; --panel:#0F1518; --upp:#1A2327; --kant:#1E282D; --skilje:#253036; --text:#E9EFF2; --text2:#A9B5BB; --dampad:#8FA0A9; --dampad2:#6F7C83;
+    --gul:#FFC94A; --gul2:rgba(255,201,74,.28); --gron:#1FB25A;
+    --sans:"Instrument Sans","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--mark); color:var(--text); font:15px/1.5 var(--sans); }
+  .wrap { max-width:960px; margin:0 auto; padding:24px 16px 64px; }
+  header { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+  h1 { font-size:24px; margin:0; letter-spacing:-.015em; font-weight:600; }
+  h1 b { font-family:var(--mono); font-weight:600; letter-spacing:.12em; font-size:14px; display:block; color:var(--dampad); margin-bottom:4px; }
+  .meta { font:12px var(--mono); color:var(--dampad); }
+  .val { display:flex; gap:6px; align-items:center; }
+  .val .meta { margin-right:4px; }
+  .val button { background:var(--panel); color:var(--text2); border:1px solid var(--kant); border-radius:6px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
+  .val button { white-space:nowrap; }
+  @media (max-width:520px) { .val button { padding:8px 9px; } .val .meta { display:none; } }
+  .val button[aria-pressed="true"] { border-color:var(--gul); color:var(--gul); }
+  .val { flex-wrap:wrap; }
+  /* Egna datum (19/11) */
+  .datum { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:-6px 0 16px; }
+  .datum[hidden] { display:none; }
+  .datum label { font:12px var(--mono); color:var(--dampad); display:flex; align-items:center; gap:6px; }
+  .datum input { background:var(--panel); color:var(--text); border:1px solid var(--kant); border-radius:6px; padding:8px 10px; font:14px var(--mono); min-height:40px; color-scheme:dark; }
+  /* Jämförelsen med perioden innan */
+  .d { font:12px var(--mono); white-space:nowrap; margin-right:4px; }
+  .d.upp { color:var(--gron); } .d.ner { color:#FF8A7A; } .d.lika { color:var(--dampad); }
+  .tal small.j { margin-top:6px; min-height:16px; }
+  .tal small span { display:inline; text-transform:none; letter-spacing:0; }
+  .tal small.j:empty { display:none; }
+  .jamfor { font-size:13px; color:var(--text2); margin:10px 2px 0; }
+  /* Dygn för dygn */
+  .dygn th { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.06em; text-align:right; padding:0 0 8px 8px; vertical-align:bottom; }
+  .dygn th:first-child, .dygn td:first-child { text-align:left; padding-left:0; }
+  .dygn td { font-family:var(--mono); text-align:right; padding-left:8px; white-space:nowrap; }
+  .dygn tr.summa td { font-weight:600; color:var(--gul); border-top:0; }
+  .dygn td.noll { color:var(--dampad2); }
+  @media (max-width:520px) { .dygn td { font-size:12.5px; padding-left:4px; } .dygn th { font-size:10px; letter-spacing:0; padding-left:4px; } }
+
+  .ruta { background:var(--panel); border:1px solid var(--kant); border-radius:14px; padding:16px 18px; }
+  .ruta + .ruta, .grid + .ruta, .ruta + .grid, .grid + .grid, details + .ruta, .ruta + details { margin-top:10px; }
+
+  /* I korthet */
+  .korthet { padding:20px 22px; }
+  .korthet h2 { margin-bottom:10px; }
+  .korthet ul { margin:0; padding:0; list-style:none; }
+  .korthet li { font-size:17px; line-height:1.45; padding:8px 0; border-top:1px dashed var(--skilje); }
+  .korthet li:first-child { border-top:0; padding-top:0; }
+  .korthet li b { font-family:var(--mono); font-weight:600; }
+
+  .tal { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px; }
+  @media (max-width:760px) { .tal { grid-template-columns:1fr 1fr; } }
+  .tal .ruta { margin:0; }
+  .tal span { display:block; font:11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.1em; }
+  .tal b { display:block; font:600 34px/1.15 var(--mono); margin-top:6px; letter-spacing:-.02em; }
+  .tal small { display:block; color:var(--text2); font-size:13px; line-height:1.35; margin-top:4px; }
+
+  /* Flikar */
+  nav.flikar { display:flex; gap:4px; margin:22px 0 12px; padding:4px; background:var(--panel); border:1px solid var(--kant); border-radius:28px; overflow-x:auto; position:sticky; top:8px; z-index:2; }
+  nav.flikar button { flex:1; white-space:nowrap; background:none; border:0; color:var(--text2); font:500 15px var(--sans); padding:10px 14px; border-radius:24px; cursor:pointer; min-height:44px; }
+  nav.flikar button[aria-selected="true"] { background:var(--upp); color:var(--text); }
+  @media (max-width:520px) { nav.flikar button { padding:10px 8px; font-size:14px; } }
+  .flik[hidden] { display:none; }
+  .ingress { color:var(--text2); font-size:15px; margin:0 2px 12px; max-width:70ch; }
+
+  h2 { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.12em; margin:0 0 12px; }
+  h3 { font:600 17px var(--sans); margin:0 0 4px; letter-spacing:-.01em; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid > .ruta { margin:0; }
+  @media (max-width:700px) { .grid { grid-template-columns:1fr; } }
+
+  .stapel { display:flex; align-items:flex-end; gap:3px; height:160px; padding-top:8px; }
+  .stapel div { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; min-width:0; height:100%; }
+  .stapel i { display:block; background:var(--gul); border-radius:2px 2px 0 0; min-height:1px; }
+  .stapel i.b { background:var(--gul2); }
+  .stapel i.g { background:var(--gron); }
+  .stapel div:hover i { outline:1px solid var(--text); }
+  .axel { display:flex; justify-content:space-between; font:11px var(--mono); color:var(--dampad); margin-top:6px; }
+  .forklaring { font-size:13px; color:var(--text2); margin:8px 0 0; }
+  .forklaring em { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:-1px; margin-right:4px; }
+  .forklaring code, .lankar code { font:12px var(--mono); color:var(--text); background:var(--mark); border:1px solid var(--kant); border-radius:4px; padding:2px 6px; word-break:break-all; }
+
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td { padding:7px 0; border-top:1px dashed var(--skilje); vertical-align:middle; }
+  tr:first-child td { border-top:0; }
+  td.n { text-align:right; font-family:var(--mono); width:64px; white-space:nowrap; padding-left:8px; }
+  td.namn { word-break:break-word; padding-right:10px; }
+  .bar { height:4px; background:var(--gul); border-radius:2px; margin-top:4px; opacity:.85; }
+  .bar.g { background:var(--gron); }
+  .tom { color:var(--dampad); font-size:13px; }
+  .lankar td { padding:9px 0; }
+
+  /* Tratten */
+  .tratt td.namn { font-size:15px; }
+  .tratt td.n { font-size:18px; font-weight:600; }
+  .tratt .bar { height:8px; border-radius:4px; }
+
+  /* Hopfällda detaljer */
+  details.mer { margin-top:10px; border:1px dashed var(--skilje); border-radius:14px; }
+  details.mer > summary { cursor:pointer; list-style:none; padding:14px 18px; font:500 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dampad); min-height:44px; }
+  details.mer > summary::-webkit-details-marker { display:none; }
+  details.mer > summary::before { content:"+ "; color:var(--text2); }
+  details.mer[open] > summary::before { content:"− "; }
+  details.mer > .innehall { padding:0 10px 10px; }
+  details.mer > .innehall > .ruta, details.mer > .innehall > .grid { margin-top:10px; }
+  details.mer > .innehall > :first-child { margin-top:0; }
+
+  #las { max-width:360px; margin:15vh auto; }
+  #las input { width:100%; padding:10px 12px; background:var(--panel); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:14px var(--mono); }
+  #las button { margin-top:10px; padding:10px 14px; background:var(--gul); color:var(--mark); border:0; border-radius:8px; font:600 14px var(--sans); cursor:pointer; }
+  .fel { color:#FF8A7A; font-size:13px; margin-top:8px; }
+  .knapp { margin-top:8px; padding:10px 14px; background:var(--panel); color:var(--text); border:1px solid var(--kant); border-radius:8px; font:12px var(--mono); cursor:pointer; min-height:44px; }
+  /* Olycksfacit (Halkvakt DECISIONS #936) */
+  .exempel { border:1px dashed var(--gul); color:var(--gul); border-radius:12px; padding:10px 14px; font-size:13px; margin:0 0 10px; }
+  .exempel[hidden] { display:none; }
+  .of-tal { grid-template-columns:repeat(3,1fr); }
+  @media (max-width:760px) { .of-tal { grid-template-columns:1fr 1fr; } .of-tal .ruta:first-child { grid-column:1 / -1; } }
+  .of-gron { color:var(--gron); } .of-rod { color:#FF8A7A; }
+  .of-veckor { display:flex; align-items:flex-end; gap:6px; height:170px; padding-top:22px; position:relative; }
+  .of-veckor > div { flex:1; min-width:0; height:100%; display:flex; flex-direction:column; justify-content:flex-end; position:relative; }
+  .of-veckor i { display:block; min-height:0; }
+  .of-veckor i:first-child { border-radius:2px 2px 0 0; }
+  .of-veckor b { position:absolute; left:0; right:0; text-align:center; font:600 11px var(--mono); color:var(--text); }
+  .of-axel { display:flex; gap:6px; font:11px var(--mono); color:var(--dampad); margin-top:6px; }
+  .of-axel span { flex:1; text-align:center; min-width:0; overflow:hidden; }
+  .of-lager { display:flex; height:30px; border-radius:6px; overflow:hidden; margin:4px 0 12px; }
+  .of-lager i { display:flex; align-items:center; justify-content:center; font:600 12px var(--mono); color:var(--mark); min-width:0; overflow:hidden; }
+  .of-miss td { padding:9px 0; }
+  .of-miss .sma { display:block; font-size:12.5px; color:var(--text2); margin-top:2px; }
+  .of-miss a { color:var(--text2); }
+  .lapp { display:inline-block; font:11px var(--mono); padding:2px 7px; border-radius:10px; background:var(--upp); color:var(--text2); white-space:nowrap; }
+  .lapp.las { background:rgba(255,138,122,.16); color:#FF8A7A; }
+  /* The shared admin menu (same rules as assets/admin.css; this page keeps its own styles). */
+  #hv-meny { display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:22px; padding:4px; background:var(--panel); border:1px solid var(--kant); border-radius:28px; }
+  #hv-meny a { color:var(--text2); text-decoration:none; font:500 15px var(--sans); padding:10px 14px; border-radius:24px; min-height:44px; display:flex; align-items:center; }
+  #hv-meny a[aria-current="page"] { background:var(--upp); color:var(--text); }
+  #hv-meny .vem { margin-left:auto; display:flex; align-items:center; gap:8px; padding-right:6px; }
+  #hv-meny button { background:none; border:1px solid var(--kant); color:var(--text2); border-radius:20px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
+  @media (max-width:620px) { #hv-meny { border-radius:18px; } #hv-meny .vem .meta { display:none; } #hv-meny a { padding:10px 10px; font-size:14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+
+  <div id="hv-innehall" hidden>
+    <header>
+      <div>
+        <h1><b>HALKVAKT</b>Olyckor</h1>
+        <div class="meta">Olycksfacit: vad Halkvakt sa där olyckorna hände</div>
+      </div>
+    </header>
+    <!-- Olyckorna (Halkvakt DECISIONS #936). Hela säsongen sedan 6/11. -->
+    <section id="flik-olycksfacit">
+      <p class="exempel" id="of-exempel" hidden>Exempeldata. Siffrorna är påhittade när admin-funktionen inte svarar på delen olyckor.</p>
+      <p class="ingress">Varje olycka som Trafikverket rapporterat sedan <span id="of-fran">6/11</span>, och vad Halkvakt sa på platsen när den började. Olyckan är facit för varningarna, inte för vägen.</p>
+      <div class="tal of-tal">
+        <div class="ruta"><span>Halkkopplade olyckor</span><b id="of-halk">–</b><small>tydlig eller trolig koppling till halka</small></div>
+        <div class="ruta"><span>Rätt varning</span><b class="of-gron" id="of-ratt">–</b><small id="of-ratt-s">Halkvakt hade en aktiv varning på platsen</small></div>
+        <div class="ruta"><span>Missar</span><b class="of-rod" id="of-miss">–</b><small id="of-miss-s">Halkvakt teg</small></div>
+      </div>
+      <div class="grid" style="margin-top:10px">
+        <div class="ruta"><h2>Missar per förbättringsområde</h2><table id="of-omraden"></table>
+          <p class="forklaring">Hela säsongen. Kollisionerna räknas som missar men får inget område.</p></div>
+        <div class="ruta"><h2>Hur ofta Halkvakt varnade, per klass</h2><table id="of-namnare"></table>
+          <p class="forklaring">Nämnaren. Det är inte en träffsäkerhet, men den visar var varningarna hamnar.</p></div>
+      </div>
+      <div class="ruta"><h2>Missarna, senaste 30 dygnen</h2><table id="of-missar" class="of-miss"></table></div>
+      <div class="ruta"><h2>Vecka för vecka</h2>
+        <div class="of-veckor" id="of-veckor"></div><div class="of-axel" id="of-axel"></div>
+        <p class="forklaring" id="of-veckor-text"></p></div>
+      <div class="ruta"><h2>Vem varnade, vid de halkkopplade olyckorna</h2>
+        <div class="of-lager" id="of-lagerstapel"></div><table id="of-lager"></table>
+        <p class="forklaring">A1 är Trafikverkets väglag och K kandidatens betavarning. <i>Bara K</i> är där kandidaten varnade och väglaget inte.</p></div>
+      <p class="forklaring">Utåt får bara <i>rätt varning</i> anföras, med säsongens andel bredvid och aldrig som att en förare varnades eller att en olycka undveks (TROSKLAR-OLYCKSFACIT §9.6).</p>
+    </section>
+  </div>
+</div>
+
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  // ── Olyckorna (Halkvakt DECISIONS #936). Hämtas när sidan öppnas. Svarar admin-funktionen inte på delen, visas exempeldata
+  // med en tydlig lapp.
+  var OF_FARG = { "RÄTT VARNING": "var(--gron)", "MISS": "#FF8A7A", "VARNING, HALKA INTE BEKRÄFTAD": "var(--gul)", "OKLAR TYSTNAD": "var(--dampad2)", "RÄTT TYSTNAD": "var(--skilje)" };
+  var OF_NAMN = { "RÄTT VARNING": "Rätt varning", "MISS": "Miss", "VARNING, HALKA INTE BEKRÄFTAD": "Varning, halkan inte bekräftad", "OKLAR TYSTNAD": "Oklar tystnad", "RÄTT TYSTNAD": "Rätt tystnad" };
+  var OF_LAGER = { "Både A1 och K": "#7FB7FF", "Bara A1": "#B9D6FF", "Bara K": "var(--gron)", "Varken A1 eller K, men ett annat lager": "var(--gul)", "Inget lager": "#FF8A7A" };
+  var OF_EXEMPEL = { fran: "2026-11-06", till: "2026-11-21",
+    sasong: { olyckor: 412, halkkopplade: 38, ratt: 21, missar: 17, kollisioner: 6 },
+    namnare: [{ klass: "TYDLIG", olyckor: 14, varnade: 10 }, { klass: "TROLIG, ett fordon", olyckor: 16, varnade: 8 }, { klass: "TROLIG, kollision", olyckor: 8, varnade: 3 },
+      { klass: "OKLAR", olyckor: 190, varnade: 41 }, { klass: "INTE, vilt", olyckor: 129, varnade: 12 }, { klass: "INTE, varmt", olyckor: 55, varnade: 2 }],
+    omraden: [{ omrade: "Täckningen", missar: 5 }, { omrade: "Rimfrosten", missar: 3 }, { omrade: "Fukten syntes inte", missar: 2 }, { omrade: "Ytan i modellen", missar: 1 }],
+    missar: [{ dag: "2026-11-20", tid: "07:10", vag: "väg 92", klass: "TYDLIG", omrade: "Täckningen", atgard: "kort #647", arende: null },
+      { dag: "2026-11-18", tid: "05:55", vag: "E45", klass: "TROLIG", omrade: "Rimfrosten", atgard: "kort #46", arende: null },
+      { dag: "2026-11-16", tid: "22:30", vag: "väg 50", klass: "TROLIG", omrade: "Fukten syntes inte", atgard: "läses i veckans ärende", arende: null },
+      { dag: "2026-11-15", tid: "16:40", vag: "E4", klass: "TROLIG", omrade: null, atgard: "ingen åtgärd, kollision", arende: null },
+      { dag: "2026-11-14", tid: "06:42", vag: "E4", klass: "TYDLIG", omrade: "Rimfrosten", atgard: "kort #46", arende: null }],
+    veckor: [{ vecka: "2026-V45", "RÄTT VARNING": 2, "MISS": 3, "VARNING, HALKA INTE BEKRÄFTAD": 6, "OKLAR TYSTNAD": 40, "RÄTT TYSTNAD": 30 },
+      { vecka: "2026-V46", "RÄTT VARNING": 8, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 18, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 70 },
+      { vecka: "2026-V47", "RÄTT VARNING": 11, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 31, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 49 }],
+    lagren: [{ rad: "Både A1 och K", senaste: 4, sasong: 11 }, { rad: "Bara A1", senaste: 2, sasong: 5 }, { rad: "Bara K", senaste: 1, sasong: 4 },
+      { rad: "Varken A1 eller K, men ett annat lager", senaste: 0, sasong: 1 }, { rad: "Inget lager", senaste: 3, sasong: 17 }] };
+
+  var ofHamtad = false;
+  function ofEsc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function ofPro(a, b) { return b ? Math.round(100 * a / b) + " %" : "–"; }
+  function ofDag(d) { var p = d.split("-"); return Number(p[2]) + "/" + Number(p[1]); }
+
+  function ritaOlycksfacit(v) {
+    var s = v.sasong;
+    $("of-fran").textContent = ofDag(v.fran);
+    $("of-halk").textContent = s.halkkopplade;
+    $("of-ratt").textContent = s.ratt;
+    $("of-ratt-s").textContent = ofPro(s.ratt, s.halkkopplade) + " av de halkkopplade hade en aktiv varning på platsen";
+    $("of-miss").textContent = s.missar;
+    $("of-miss-s").textContent = "Halkvakt teg" + (s.kollisioner ? ", varav " + s.kollisioner + " kollisioner" : "");
+
+    var maxO = Math.max.apply(null, v.omraden.map(function (o) { return o.missar; }).concat([1]));
+    $("of-omraden").innerHTML = v.omraden.length ? v.omraden.map(function (o) {
+      return '<tr><td class="namn">' + ofEsc(o.omrade) + '<div class="bar" style="background:#FF8A7A;width:' + (100 * o.missar / maxO) + '%"></div></td><td class="n">' + o.missar + "</td></tr>";
+    }).join("") : '<tr><td class="tom">Inga missar med område än.</td></tr>';
+
+    $("of-namnare").innerHTML = v.namnare.map(function (n) {
+      var halk = /^(TYDLIG|TROLIG)/.test(n.klass);
+      return '<tr><td class="namn">' + ofEsc(n.klass) + ' <span class="meta">' + n.varnade + " av " + n.olyckor + '</span><div class="bar' + (halk ? " g" : "") + '" style="width:' + (n.olyckor ? 100 * n.varnade / n.olyckor : 0) + '%' + (halk ? "" : ";background:var(--dampad2)") + '"></div></td><td class="n">' + ofPro(n.varnade, n.olyckor) + "</td></tr>";
+    }).join("");
+
+    $("of-missar").innerHTML = v.missar.length ? v.missar.map(function (m) {
+      var las = m.atgard === "läses i veckans ärende";
+      var arende = m.arende ? ' · <a href="https://github.com/Axelstar/Halkvakt/issues/' + Number(m.arende) + '" target="_blank" rel="noopener">ärendet</a>' : "";
+      return '<tr><td class="namn"><b>' + ofEsc(ofDag(m.dag) + " " + m.tid + " · " + m.vag) + '</b><span class="sma">' + ofEsc(m.klass) + (m.omrade ? " · " + ofEsc(m.omrade) : "") + arende + '</span></td>' +
+        '<td style="text-align:right"><span class="lapp' + (las ? " las" : "") + '">' + ofEsc(m.atgard) + "</span></td></tr>";
+    }).join("") : '<tr><td class="tom">Inga missar de senaste 30 dygnen.</td></tr>';
+
+    var ORD = ["RÄTT VARNING", "MISS", "VARNING, HALKA INTE BEKRÄFTAD", "OKLAR TYSTNAD", "RÄTT TYSTNAD"];
+    var summa = function (w) { return ORD.reduce(function (a, k) { return a + (w[k] || 0); }, 0); };
+    var maxV = Math.max.apply(null, v.veckor.map(summa).concat([1]));
+    $("of-veckor").innerHTML = v.veckor.map(function (w) {
+      var halk = (w["RÄTT VARNING"] || 0) + (w["MISS"] || 0), t = summa(w);
+      var delar = ORD.slice().reverse().map(function (k) { return '<i style="height:' + (100 * (w[k] || 0) / maxV) + '%;background:' + OF_FARG[k] + '"></i>'; }).join("");
+      return '<div title="' + ofEsc(w.vecka + ": " + t + " olyckor") + '"><b style="bottom:calc(' + (100 * t / maxV) + '% + 4px)">' + ofPro(w["RÄTT VARNING"] || 0, halk) + "</b>" + delar + "</div>";
+    }).join("");
+    $("of-axel").innerHTML = v.veckor.map(function (w) { return "<span>" + ofEsc(w.vecka.replace(/^\d+-/, "")) + "</span>"; }).join("");
+    $("of-veckor-text").innerHTML = ORD.map(function (k) { return '<em style="background:' + OF_FARG[k] + '"></em>' + OF_NAMN[k]; }).join(" &nbsp; ") +
+      ". Talet över stapeln är andelen rätt varning av veckans halkkopplade olyckor. Få olyckor i veckan gör att talet hoppar.";
+
+    var tot = v.lagren.reduce(function (a, r) { return a + r.sasong; }, 0);
+    $("of-lagerstapel").innerHTML = v.lagren.filter(function (r) { return r.sasong; }).map(function (r) {
+      return '<i title="' + ofEsc(r.rad) + '" style="flex:' + r.sasong + ";background:" + OF_LAGER[r.rad] + '">' + r.sasong + "</i>";
+    }).join("");
+    $("of-lager").innerHTML = '<tr><td class="meta">Lagren vid starten</td><td class="n meta">7 dygn</td><td class="n meta">Säsongen</td></tr>' + v.lagren.map(function (r) {
+      return '<tr><td class="namn"><em style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:' + OF_LAGER[r.rad] + '"></em>' + ofEsc(r.rad) + '</td><td class="n">' + r.senaste + '</td><td class="n">' + r.sasong + " <span class=\"meta\">" + ofPro(r.sasong, tot) + "</span></td></tr>";
+    }).join("");
+  }
+
+  function laddaOlycksfacit() {
+    if (ofHamtad) return; ofHamtad = true;
+    var exempel = /[?&]exempel=1/.test(location.search);
+    (exempel ? Promise.reject(new Error("exempel")) : HV.api("olyckor")).then(function (v) {
+      $("of-exempel").hidden = true; ritaOlycksfacit(v);
+    }).catch(function () { $("of-exempel").hidden = false; ritaOlycksfacit(OF_EXEMPEL); });
+  }
+
+  HV.sida("olyckor", laddaOlycksfacit);
+})();
+</script>
+</body>
+</html>

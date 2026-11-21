@@ -6,7 +6,7 @@
   var NYCKEL = "sb_publishable_FGhyCVl0gSpMh21o1BJGMg_bqxvCs1k";
   var API = SB + "/functions/v1/admin";
   var LAGER = "hv-admin";
-  var MENY = [["statistik", "Statistik"], ["social", "Sociala medier"], ["mallar", "Mallar och rutiner"], ["projekt", "Projektet"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
+  var MENY = [["statistik", "Statistik"], ["olyckor", "Olyckor"], ["social", "Sociala medier"], ["mallar", "Mallar och rutiner"], ["projekt", "Projektet"], ["prioriteringar", "Prioriteringar"], ["anvandare", "Användare"]];
 
   // Menu choices every signed-in user gets. They only show pages that are already public elsewhere, so the API has no data to guard.
   var OPPNA = ["projekt"];
