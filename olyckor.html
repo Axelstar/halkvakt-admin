@@ -250,7 +250,8 @@
 
     $("of-missar").innerHTML = v.missar.length ? v.missar.map(function (m) {
       var las = m.atgard === "läses i veckans ärende";
-      var arende = m.arende ? ' · <a href="https://github.com/Axelstar/Halkvakt/issues/' + Number(m.arende) + '" target="_blank" rel="noopener">ärendet</a>' : "";
+      var arende = (m.arende ? ' · <a href="https://github.com/Axelstar/Halkvakt/issues/' + Number(m.arende) + '" target="_blank" rel="noopener">ärendet</a>' : "") +
+        (m.vecka ? ' · <a href="https://github.com/Axelstar/Halkvakt/issues/' + Number(m.vecka) + '" target="_blank" rel="noopener">veckans ärende</a>' : "");
       return '<tr><td class="namn"><b>' + ofEsc(ofDag(m.dag) + " " + m.tid + " · " + m.vag) + '</b><span class="sma">' + ofEsc(m.klass) + (m.omrade ? " · " + ofEsc(m.omrade) : "") + arende + '</span></td>' +
         '<td style="text-align:right"><span class="lapp' + (las ? " las" : "") + '">' + ofEsc(m.atgard) + "</span></td></tr>";
     }).join("") : '<tr><td class="tom">Inga missar de senaste 30 dygnen.</td></tr>';
