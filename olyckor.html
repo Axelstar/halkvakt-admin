@@ -240,7 +240,8 @@
     $("of-halk").textContent = s.halkkopplade;
     $("of-halk-s").textContent = "av " + s.olyckor + " olyckor (" + ofPro(s.halkkopplade, s.olyckor) + "), med tydlig eller trolig koppling till halka";
     $("of-ratt").textContent = s.ratt;
-    $("of-ratt-s").textContent = ofPro(s.ratt, s.halkkopplade) + " av de halkkopplade hade en aktiv varning på platsen";
+    $("of-ratt-s").textContent = ofPro(s.ratt, s.halkkopplade) + " av de halkkopplade hade en aktiv varning på platsen" +
+      (s.rattVaglaget ? ". " + s.rattVaglaget + " av dem är TROLIG, väglaget, och får inte anföras utåt" : "");
     $("of-miss").textContent = s.missar;
     $("of-miss-s").textContent = "Halkvakt teg" + (s.kollisioner ? ", varav " + s.kollisioner + " kollisioner" : "");
 
