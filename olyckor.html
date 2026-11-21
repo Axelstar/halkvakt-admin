@@ -189,6 +189,11 @@
       </div>
       <div class="ruta"><h2>Därför är de oklara</h2><table id="of-oklara"></table>
         <p class="forklaring" id="of-oklara-text">En oklar olycka är varken trolig halka eller för varm. Raderna följer klassningens regler i ordning.</p></div>
+      <div class="ruta" id="of-sann-ruta" hidden><h2>Hur många olyckor orsakade vädret?</h2>
+        <p class="of-sann-topp" id="of-sann-topp"></p><table id="of-sann-veckor"></table>
+        <details class="of-fall" style="margin-top:14px"><summary><h2>Andelen per väderläge</h2><span class="meta">olyckor per 10 000 stationstimmar</span></summary>
+          <table id="of-sann-hinkar"></table></details>
+        <p class="forklaring">Varje olycka får väderläget vid närmaste station inom 15 km, timmen den började. Fukt är nederbörd eller en yta kallare än daggpunkten vid stationen, eller nederbörd vid en granne inom 15 km. I varje väderläge räknas olyckorna per stationstimme och jämförs med samma tid på dygnet (dag 07–18, natt) när ytan är varmare än +3 °C. Överskottet är andelen som vädret orsakade, och summan över olyckorna är det väntade antalet. Talen är grova: trafikmängden är inte med, och säsongen är kort.</p></div>
       <div class="ruta"><details class="of-fall"><summary><h2>Missarna, senaste 30 dygnen</h2><span class="meta" id="of-missar-antal"></span></summary>
         <table id="of-missar" class="of-miss"></table></details></div>
       <div class="ruta"><h2>Dygn för dygn</h2>
@@ -211,6 +216,10 @@
   var OF_LAGER = { "Både A1 och K": "#7FB7FF", "Bara A1": "#B9D6FF", "Bara K": "var(--gron)", "Varken A1 eller K, men ett annat lager": "var(--gul)", "Inget lager": "#FF8A7A" };
   var OF_EXEMPEL = { fran: "2026-11-06", till: "2026-11-21",
     sasong: { olyckor: 412, halkkopplade: 38, ratt: 21, missar: 17, kollisioner: 6 },
+    sannolikhet: { olyckor: 380, utanStation: 22, vantat: 61.4, veckor: [{ vecka: "2026-V45", olyckor: 40, klassade: 21, vantat: 9.2, utanStation: 2 },
+      { vecka: "2026-V46", olyckor: 190, klassade: 46, vantat: 30.1, utanStation: 11 }, { vecka: "2026-V47", olyckor: 150, klassade: 30, vantat: 22.1, utanStation: 9 }],
+      hinkar: [{ dygn: "dag", hink: "kall, fukt", timmar: 40000, olyckor: 60, per10000: 15, andel: 0.15 }, { dygn: "dag", hink: "0 till +1, fukt", timmar: 12000, olyckor: 40, per10000: 33.3, andel: 0.62 },
+        { dygn: "dag", hink: "över +3", timmar: 90000, olyckor: 115, per10000: 12.8, andel: 0 }, { dygn: "natt", hink: "kall, fukt", timmar: 50000, olyckor: 20, per10000: 4, andel: 0.4 }] },
     namnare: [{ klass: "TYDLIG", olyckor: 14, varnade: 10 }, { klass: "TROLIG, ett fordon", olyckor: 16, varnade: 8 }, { klass: "TROLIG, kollision", olyckor: 8, varnade: 3 },
       { klass: "OKLAR", olyckor: 190, varnade: 41 }, { klass: "INTE, vilt", olyckor: 129, varnade: 12 }, { klass: "INTE, varmt", olyckor: 55, varnade: 2 }],
     omraden: [{ omrade: "Täckningen", missar: 5 }, { omrade: "Rimfrosten", missar: 3 }, { omrade: "Fukten syntes inte", missar: 2 }, { omrade: "Ytan i modellen", missar: 1 }],
@@ -233,6 +242,8 @@
   function ofEsc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function ofPro(a, b) { return b ? Math.round(100 * a / b) + " %" : "–"; }
   function ofDag(d) { var p = d.split("-"); return Number(p[2]) + "/" + Number(p[1]); }
+  function ofTal(x) { return String(x).replace(".", ","); }
+  function ofHink(h) { return h === "över +3" ? "Ytan över +3 °C" : h.charAt(0) === "k" ? "Kall yta" + h.slice(4) : "Ytan " + h.replace(", ", " °C, "); }
 
   function ritaOlycksfacit(v) {
     var s = v.sasong;
@@ -251,6 +262,25 @@
           '</td><td class="n">' + r.varnade + ' <span class="meta">' + ofPro(r.varnade, r.olyckor) + "</span></td></tr>";
       }).join("") + '<tr><td class="namn"><b>Alla oklara</b></td><td class="n"><b>' + okl + '</b></td><td class="n"><b>' + okv + '</b> <span class="meta">' + ofPro(okv, okl) + "</span></td></tr>";
     }
+    // Väntat antal halkolyckor (Halkvakt DECISIONS #940, sql/138): basfrekvensen per väderläge, summerad över olyckorna.
+    var sa = v.sannolikhet;
+    $("of-sann-ruta").hidden = !sa;
+    if (sa) {
+      var klassadeS = sa.veckor.reduce(function (a, w) { return a + w.klassade; }, 0);
+      $("of-sann-topp").innerHTML = "<b>" + ofTal(sa.vantat) + "</b> väntade halkolyckor av " + sa.olyckor + " olyckor i säsongen, mot <b>" + klassadeS +
+        "</b> klassade som tydlig eller trolig halka." + (sa.utanStation ? ' <span class="meta">' + sa.utanStation + " olyckor saknar station och räknas inte.</span>" : "");
+      $("of-sann-veckor").innerHTML = '<tr><td class="meta">Vecka</td><td class="n meta">Olyckor</td><td class="n meta">Klassade halka</td><td class="n meta">Väntat</td></tr>' +
+        sa.veckor.map(function (w) {
+          return '<tr><td class="namn">' + ofEsc(w.vecka.replace(/^\d{4}-V0?/, "V")) + '</td><td class="n">' + w.olyckor + '</td><td class="n">' + w.klassade +
+            '</td><td class="n"><b>' + ofTal(w.vantat) + "</b></td></tr>";
+        }).join("");
+      $("of-sann-hinkar").innerHTML = '<tr><td class="meta">Väderläge</td><td class="n meta">Per 10 000</td><td class="n meta">Orsakat</td></tr>' +
+        sa.hinkar.map(function (h) {
+          return '<tr><td class="namn">' + ofEsc(ofHink(h.hink) + ", " + h.dygn) + ' <span class="meta">' + h.olyckor + " olyckor</span></td><td class=\"n\">" +
+            ofTal(h.per10000) + '</td><td class="n">' + (h.andel === null ? "–" : Math.round(100 * h.andel) + " %") + "</td></tr>";
+        }).join("");
+    }
+
     var maxO = Math.max.apply(null, v.omraden.map(function (o) { return o.missar; }).concat([1]));
     $("of-omraden").innerHTML = v.omraden.length ? v.omraden.map(function (o) {
       return '<tr><td class="namn">' + ofEsc(o.omrade) + '<div class="bar" style="background:#FF8A7A;width:' + (100 * o.missar / maxO) + '%"></div></td><td class="n">' + o.missar + "</td></tr>";
