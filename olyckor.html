@@ -125,13 +125,19 @@
   .of-tal { grid-template-columns:repeat(3,1fr); }
   @media (max-width:760px) { .of-tal { grid-template-columns:1fr 1fr; } .of-tal .ruta:first-child { grid-column:1 / -1; } }
   .of-gron { color:var(--gron); } .of-rod { color:#FF8A7A; }
-  .of-veckor { display:flex; align-items:flex-end; gap:6px; height:170px; padding-top:22px; position:relative; }
-  .of-veckor > div { flex:1; min-width:0; height:100%; display:flex; flex-direction:column; justify-content:flex-end; position:relative; }
-  .of-veckor i { display:block; min-height:0; }
-  .of-veckor i:first-child { border-radius:2px 2px 0 0; }
-  .of-veckor b { position:absolute; left:0; right:0; text-align:center; font:600 11px var(--mono); color:var(--text); }
-  .of-axel { display:flex; gap:6px; font:11px var(--mono); color:var(--dampad); margin-top:6px; }
-  .of-axel span { flex:1; text-align:center; min-width:0; overflow:hidden; }
+  .of-dygn { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
+  .of-dygn .vk { flex:1 1 0; display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .of-dygn .vk + .vk { border-left:1px dashed var(--skilje); padding-left:8px; }
+  .of-dygn .st { display:flex; align-items:flex-end; gap:3px; height:150px; border-bottom:1px solid var(--skilje); }
+  .of-dygn .st > div { flex:1 1 0; min-width:10px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; position:relative; }
+  .of-dygn .st i { display:block; min-height:0; }
+  .of-dygn .st i.m { background:#FF8A7A; border-radius:2px 2px 0 0; } .of-dygn .st i.r { background:var(--gron); }
+  .of-dygn .st i.r:first-child { border-radius:2px 2px 0 0; }
+  .of-dygn .st b { font:600 10px var(--mono); color:var(--text2); text-align:center; }
+  .of-dygn .ax { display:flex; gap:3px; font:10px var(--mono); color:var(--dampad2); }
+  .of-dygn .ax span { flex:1 1 0; min-width:10px; text-align:center; }
+  .of-dygn .vt { font:600 12px var(--mono); color:var(--text); }
+  .of-dygn .vt span { display:block; font-weight:400; color:var(--dampad); }
   .of-lager { display:flex; height:30px; border-radius:6px; overflow:hidden; margin:4px 0 12px; }
   .of-lager i { display:flex; align-items:center; justify-content:center; font:600 12px var(--mono); color:var(--mark); min-width:0; overflow:hidden; }
   .of-miss td { padding:9px 0; }
@@ -185,9 +191,9 @@
         <p class="forklaring" id="of-oklara-text">En oklar olycka är varken trolig halka eller för varm. Raderna följer klassningens regler i ordning.</p></div>
       <div class="ruta"><details class="of-fall"><summary><h2>Missarna, senaste 30 dygnen</h2><span class="meta" id="of-missar-antal"></span></summary>
         <table id="of-missar" class="of-miss"></table></details></div>
-      <div class="ruta"><h2>Vecka för vecka</h2>
-        <div class="of-veckor" id="of-veckor"></div><div class="of-axel" id="of-axel"></div>
-        <p class="forklaring" id="of-veckor-text"></p></div>
+      <div class="ruta"><h2>Dygn för dygn</h2>
+        <div class="of-dygn" id="of-dygn"></div>
+        <p class="forklaring" id="of-dygn-text"></p></div>
       <div class="ruta"><h2>Vem varnade, vid de halkkopplade olyckorna</h2>
         <div class="of-lager" id="of-lagerstapel"></div><table id="of-lager"></table>
         <p class="forklaring">A1 är Trafikverkets väglag och K kandidatens betavarning. <i>Bara K</i> är där kandidaten varnade och väglaget inte.</p></div>
@@ -202,8 +208,6 @@
   var $ = function (id) { return document.getElementById(id); };
   // ── Olyckorna (Halkvakt DECISIONS #936). Hämtas när sidan öppnas. Svarar admin-funktionen inte på delen, visas exempeldata
   // med en tydlig lapp.
-  var OF_FARG = { "RÄTT VARNING": "var(--gron)", "MISS": "#FF8A7A", "VARNING, HALKA INTE BEKRÄFTAD": "var(--gul)", "OKLAR TYSTNAD": "var(--dampad2)", "RÄTT TYSTNAD": "var(--skilje)" };
-  var OF_NAMN = { "RÄTT VARNING": "Rätt varning", "MISS": "Miss", "VARNING, HALKA INTE BEKRÄFTAD": "Varning, halkan inte bekräftad", "OKLAR TYSTNAD": "Oklar tystnad", "RÄTT TYSTNAD": "Rätt tystnad" };
   var OF_LAGER = { "Både A1 och K": "#7FB7FF", "Bara A1": "#B9D6FF", "Bara K": "var(--gron)", "Varken A1 eller K, men ett annat lager": "var(--gul)", "Inget lager": "#FF8A7A" };
   var OF_EXEMPEL = { fran: "2026-11-06", till: "2026-11-21",
     sasong: { olyckor: 412, halkkopplade: 38, ratt: 21, missar: 17, kollisioner: 6 },
@@ -215,6 +219,8 @@
       { dag: "2026-11-16", tid: "22:30", vag: "väg 50", klass: "TROLIG", omrade: "Fukten syntes inte", atgard: "läses i veckans ärende", arende: null },
       { dag: "2026-11-15", tid: "16:40", vag: "E4", klass: "TROLIG", omrade: null, atgard: "ingen åtgärd, kollision", arende: null },
       { dag: "2026-11-14", tid: "06:42", vag: "E4", klass: "TYDLIG", omrade: "Rimfrosten", atgard: "kort #46", arende: null }],
+    dygn: [[3,4],[4,4],[3,3],[1,2],[1,3],[2,2],[12,4],[4,4],[4,4],[2,1],[3,1],[3,1],[7,1],[6,2],[5,1],[0,0]].map(function (x, i) {
+      return { dag: "2026-11-" + String(6 + i).padStart(2, "0"), ratt: x[0], missar: x[1] }; }),
     veckor: [{ vecka: "2026-V45", "RÄTT VARNING": 2, "MISS": 3, "VARNING, HALKA INTE BEKRÄFTAD": 6, "OKLAR TYSTNAD": 40, "RÄTT TYSTNAD": 30 },
       { vecka: "2026-V46", "RÄTT VARNING": 8, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 18, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 70 },
       { vecka: "2026-V47", "RÄTT VARNING": 11, "MISS": 7, "VARNING, HALKA INTE BEKRÄFTAD": 31, "OKLAR TYSTNAD": 75, "RÄTT TYSTNAD": 49 }],
@@ -265,17 +271,31 @@
         '<td style="text-align:right"><span class="lapp' + (las ? " las" : "") + '">' + ofEsc(m.atgard) + "</span></td></tr>";
     }).join("") : '<tr><td class="tom">Inga missar de senaste 30 dygnen.</td></tr>';
 
-    var ORD = ["RÄTT VARNING", "MISS", "VARNING, HALKA INTE BEKRÄFTAD", "OKLAR TYSTNAD", "RÄTT TYSTNAD"];
-    var summa = function (w) { return ORD.reduce(function (a, k) { return a + (w[k] || 0); }, 0); };
-    var maxV = Math.max.apply(null, v.veckor.map(summa).concat([1]));
-    $("of-veckor").innerHTML = v.veckor.map(function (w) {
-      var halk = (w["RÄTT VARNING"] || 0) + (w["MISS"] || 0), t = summa(w);
-      var delar = ORD.slice().reverse().map(function (k) { return '<i style="height:' + (100 * (w[k] || 0) / maxV) + '%;background:' + OF_FARG[k] + '"></i>'; }).join("");
-      return '<div title="' + ofEsc(w.vecka + ": " + t + " olyckor") + '"><b style="bottom:calc(' + (100 * t / maxV) + '% + 4px)">' + ofPro(w["RÄTT VARNING"] || 0, halk) + "</b>" + delar + "</div>";
-    }).join("");
-    $("of-axel").innerHTML = v.veckor.map(function (w) { return "<span>" + ofEsc(w.vecka.replace(/^\d+-/, "")) + "</span>"; }).join("");
-    $("of-veckor-text").innerHTML = ORD.map(function (k) { return '<em style="background:' + OF_FARG[k] + '"></em>' + OF_NAMN[k]; }).join(" &nbsp; ") +
-      ". Talet över stapeln är andelen rätt varning av veckans halkkopplade olyckor. Få olyckor i veckan gör att talet hoppar.";
+    // Dygn för dygn (Bengt 21/11): de halkkopplade olyckorna varje dygn, rätt varning i grönt och missar i rött, veckorna åtskilda.
+    var dygn = v.dygn || [], maxD = Math.max.apply(null, dygn.map(function (d) { return d.ratt + d.missar; }).concat([1]));
+    var veckorD = [];
+    dygn.forEach(function (d) {
+      var dt = new Date(d.dag + "T12:00:00Z"), mandag = dt.getUTCDay() === 1;
+      if (!veckorD.length || mandag) veckorD.push([]);
+      veckorD[veckorD.length - 1].push(d);
+    });
+    var vnr = function (dag) { var d = new Date(dag + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 3 - (d.getUTCDay() + 6) % 7);
+      var j = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - j) / 864e5 - 3 + (j.getUTCDay() + 6) % 7) / 7); };
+    $("of-dygn").innerHTML = veckorD.length ? veckorD.map(function (w) {
+      var r = 0, m = 0; w.forEach(function (d) { r += d.ratt; m += d.missar; });
+      var hel = w.length === 7 && w[6].dag < v.till;
+      var st = w.map(function (d) {
+        var t = d.ratt + d.missar;
+        return '<div title="' + ofEsc(ofDag(d.dag) + ": " + d.ratt + " rätt varning, " + d.missar + " missar") + '">' + (t ? "<b>" + t + "</b>" : "") +
+          '<i class="m" style="height:' + (100 * d.missar / maxD) + '%"></i><i class="r" style="height:' + (100 * d.ratt / maxD) + '%"></i></div>';
+      }).join("");
+      var ax = w.map(function (d) { return "<span>" + Number(d.dag.slice(8)) + "</span>"; }).join("");
+      return '<div class="vk" style="flex:' + w.length + ' 1 0"><div class="st">' + st + '</div><div class="ax">' + ax + '</div>' +
+        '<div class="vt">V' + vnr(w[0].dag) + " " + ofPro(r, r + m) + " <span>" + r + " av " + (r + m) + (hel ? "" : ", " + (w[w.length - 1].dag >= v.till ? "pågår" : w.length + " dygn")) + "</span></div></div>";
+    }).join("") : '<p class="tom">Inga dygn att visa än.</p>';
+    $("of-dygn").scrollLeft = $("of-dygn").scrollWidth;   // den senaste veckan syns först i mobilen
+    $("of-dygn-text").innerHTML = '<em style="background:var(--gron)"></em>Rätt varning &nbsp; <em style="background:#FF8A7A"></em>Miss (tyst vid halka). ' +
+      "Talet över stapeln är dygnets halkkopplade olyckor. Under varje vecka står andelen rätt varning och hur många av de halkkopplade det var.";
 
     var tot = v.lagren.reduce(function (a, r) { return a + r.sasong; }, 0);
     $("of-lagerstapel").innerHTML = v.lagren.filter(function (r) { return r.sasong; }).map(function (r) {
