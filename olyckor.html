@@ -197,6 +197,8 @@
       <div class="ruta"><h2>Vem varnade, vid de halkkopplade olyckorna</h2>
         <div class="of-lager" id="of-lagerstapel"></div><table id="of-lager"></table>
         <p class="forklaring">A1 är Trafikverkets väglag och K kandidatens betavarning. <i>Bara K</i> är där kandidaten varnade och väglaget inte.</p></div>
+      <div class="ruta"><h2>Småvägsrösten</h2><table id="of-smavag"></table>
+        <p class="forklaring" id="of-smavag-text"></p></div>
       <p class="forklaring">Utåt får bara <i>rätt varning</i> anföras, med säsongens andel bredvid och aldrig som att en förare varnades eller att en olycka undveks (TROSKLAR-OLYCKSFACIT §9.6).</p>
     </section>
   </div>
@@ -227,7 +229,9 @@
     lagren: [{ rad: "Både A1 och K", senaste: 4, sasong: 11 }, { rad: "Bara A1", senaste: 2, sasong: 5 }, { rad: "Bara K", senaste: 1, sasong: 4 },
       { rad: "Varken A1 eller K, men ett annat lager", senaste: 0, sasong: 1 }, { rad: "Inget lager", senaste: 3, sasong: 17 }],
     oklara: [{ skal: "Ingen station inom 15 km", olyckor: 16, varnade: 6 }, { skal: "Ytan mellan 0 och +3 °C", olyckor: 120, varnade: 5 },
-      { skal: "Kall yta, men texten säger inte hur olyckan gick till", olyckor: 30, varnade: 17 }, { skal: "Kall yta, men ingen fukt eller rimfrost vid stationen", olyckor: 24, varnade: 13 }] };
+      { skal: "Kall yta, men texten säger inte hur olyckan gick till", olyckor: 30, varnade: 17 }, { skal: "Kall yta, men ingen fukt eller rimfrost vid stationen", olyckor: 24, varnade: 13 }],
+    smavag: { fran: "2026-11-25", dygn: [{ dag: "2026-11-25", varningar: 4, olyckor: 1, halkkopplade: 0, varnade: 0 },
+      { dag: "2026-11-26", varningar: 37, olyckor: 3, halkkopplade: 2, varnade: 1 }], summa: { varningar: 41, olyckor: 4, halkkopplade: 2, varnade: 1 } } };
 
   var ofHamtad = false;
   function ofEsc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -305,6 +309,18 @@
     $("of-lager").innerHTML = '<tr><td class="meta">Lagren vid starten</td><td class="n meta">7 dygn</td><td class="n meta">Säsongen</td></tr>' + v.lagren.map(function (r) {
       return '<tr><td class="namn"><em style="display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:' + OF_LAGER[r.rad] + '"></em>' + ofEsc(r.rad) + '</td><td class="n">' + r.senaste + '</td><td class="n">' + r.sasong + " <span class=\"meta\">" + ofPro(r.sasong, tot) + "</span></td></tr>";
     }).join("");
+
+    // Småvägsrösten (Halkvakt, Bengt 26/11): telefonernas småvägsvarningar per dygn och olyckorna nära en småvägspunkt sedan påslaget.
+    var sv = v.smavag;
+    if (!sv) { $("of-smavag").innerHTML = '<tr><td class="tom">Inga tal om småvägsrösten än.</td></tr>'; return; }
+    var svRad = function (namn, d) { return '<tr><td class="namn">' + namn + '</td><td class="n">' + d.varningar + '</td><td class="n">' + d.olyckor +
+      '</td><td class="n">' + d.halkkopplade + '</td><td class="n">' + d.varnade + "</td></tr>"; };
+    $("of-smavag").innerHTML = '<tr><td class="meta">Dygn</td><td class="n meta">Varningar</td><td class="n meta">Olyckor</td>' +
+      '<td class="n meta">Halk</td><td class="n meta">Varnade</td></tr>' +
+      sv.dygn.slice().reverse().map(function (d) { return svRad(+d.dag.slice(8) + "/" + +d.dag.slice(5, 7), d); }).join("") + svRad("<b>Totalt</b>", sv.summa);
+    $("of-smavag-text").innerHTML = "<i>Varningar</i> är hur många gånger telefonerna sa småvägsvarningen (appens räknare). <i>Olyckor</i> är olyckorna " +
+      "inom 0,5 km från en småvägspunkt sedan påslaget 25/11 21.24, <i>Halk</i> de av dem med tydlig eller trolig koppling till halka, och <i>Varnade</i> de där småvägsrösten varnade när olyckan började. " +
+      "Olyckorna räknas när de är minst sex timmar gamla och klassade.";
   }
 
   function laddaOlycksfacit() {
