@@ -311,16 +311,18 @@
     }).join("");
 
     // Småvägsrösten (Halkvakt, Bengt 26/11): telefonernas småvägsvarningar per dygn och olyckorna nära en småvägspunkt sedan påslaget.
-    var sv = v.smavag;
-    if (!sv) { $("of-smavag").innerHTML = '<tr><td class="tom">Inga tal om småvägsrösten än.</td></tr>'; return; }
-    var svRad = function (namn, d) { return '<tr><td class="namn">' + namn + '</td><td class="n">' + d.varningar + '</td><td class="n">' + d.olyckor +
-      '</td><td class="n">' + d.halkkopplade + '</td><td class="n">' + d.varnade + "</td></tr>"; };
-    $("of-smavag").innerHTML = '<tr><td class="meta">Dygn</td><td class="n meta">Varningar</td><td class="n meta">Olyckor</td>' +
-      '<td class="n meta">Halk</td><td class="n meta">Varnade</td></tr>' +
-      sv.dygn.slice().reverse().map(function (d) { return svRad(+d.dag.slice(8) + "/" + +d.dag.slice(5, 7), d); }).join("") + svRad("<b>Totalt</b>", sv.summa);
-    $("of-smavag-text").innerHTML = "<i>Varningar</i> är hur många gånger telefonerna sa småvägsvarningen (appens räknare). <i>Olyckor</i> är olyckorna " +
-      "inom 0,5 km från en småvägspunkt sedan påslaget 25/11 21.24, <i>Halk</i> de av dem med tydlig eller trolig koppling till halka, och <i>Varnade</i> de där småvägsrösten varnade när olyckan började. " +
-      "Olyckorna räknas när de är minst sex timmar gamla och klassade.";
+    try {
+      var sv = v.smavag;
+      if (!sv || sv.fel) { $("of-smavag").innerHTML = '<tr><td class="tom">' + (sv ? "Småvägsdelen kunde inte läsas: " + ofEsc(sv.fel) : "Inga tal om småvägsrösten än.") + "</td></tr>"; return; }
+      var svRad = function (namn, d) { return '<tr><td class="namn">' + namn + '</td><td class="n">' + d.varningar + '</td><td class="n">' + d.olyckor +
+        '</td><td class="n">' + d.halkkopplade + '</td><td class="n">' + d.varnade + "</td></tr>"; };
+      $("of-smavag").innerHTML = '<tr><td class="meta">Dygn</td><td class="n meta">Varningar</td><td class="n meta">Olyckor</td>' +
+        '<td class="n meta">Halk</td><td class="n meta">Varnade</td></tr>' +
+        sv.dygn.slice().reverse().map(function (d) { return svRad(+d.dag.slice(8) + "/" + +d.dag.slice(5, 7), d); }).join("") + svRad("<b>Totalt</b>", sv.summa);
+      $("of-smavag-text").innerHTML = "<i>Varningar</i> är hur många gånger telefonerna sa småvägsvarningen (appens räknare). <i>Olyckor</i> är olyckorna " +
+        "inom 0,5 km från en småvägspunkt sedan påslaget 25/11 21.24, <i>Halk</i> de av dem med tydlig eller trolig koppling till halka, och <i>Varnade</i> de där småvägsrösten varnade när olyckan började. " +
+        "Olyckorna räknas när de är minst sex timmar gamla och klassade.";
+    } catch (e) { $("of-smavag").innerHTML = '<tr><td class="tom">Rutan kunde inte ritas: ' + ofEsc(String(e)) + "</td></tr>"; }
   }
 
   function laddaOlycksfacit() {
