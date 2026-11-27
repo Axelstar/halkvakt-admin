@@ -158,6 +158,10 @@
   #hv-meny .vem { margin-left:auto; display:flex; align-items:center; gap:8px; padding-right:6px; }
   #hv-meny button { background:none; border:1px solid var(--kant); color:var(--text2); border-radius:20px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
   @media (max-width:620px) { #hv-meny { border-radius:18px; } #hv-meny .vem .meta { display:none; } #hv-meny a { padding:10px 10px; font-size:14px; } }
+  /* Undermenyn (samma regler som assets/admin.css): olycksfacit och kvalitetstavlan (Halkvakt DECISIONS #973). */
+  .undermeny { display:flex; gap:4px; margin:0 0 18px; border-bottom:1px solid var(--kant); }
+  .undermeny a { color:var(--text2); text-decoration:none; font:500 14px var(--sans); padding:10px 12px; min-height:44px; display:flex; align-items:center; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .undermeny a[aria-current="page"] { color:var(--text); border-bottom-color:var(--gul); }
 </style>
 </head>
 <body>
@@ -172,6 +176,7 @@
         <div class="meta">Olycksfacit: vad Halkvakt sa där olyckorna hände</div>
       </div>
     </header>
+    <nav class="undermeny" aria-label="Olyckor"><a href="olyckor" aria-current="page">Olycksfacit</a><a href="kvalitet">Kvalitetstavlan</a></nav>
     <!-- Olyckorna (Halkvakt DECISIONS #936). Hela säsongen sedan 6/11. -->
     <section id="flik-olycksfacit">
       <p class="exempel" id="of-exempel" hidden>Exempeldata. Siffrorna är påhittade när admin-funktionen inte svarar på delen olyckor.</p>

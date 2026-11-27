@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Kvalitet · Halkvakt admin</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/admin.css">
+<style>
+  /* Kvalitetstavlan (Halkvakt kort #682, DECISIONS #973, docs/TROSKLAR-KVALITETSTAVLAN.md). Färgerna är §8:s. */
+  .exempel { border:1px dashed var(--gul); color:var(--gul); border-radius:12px; padding:10px 14px; font-size:13px; margin:0 0 10px; }
+  .val { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:0 0 14px; }
+  .val button, .val select { background:var(--panel); color:var(--text2); border:1px solid var(--kant); border-radius:6px; padding:8px 12px; font:12px var(--mono); cursor:pointer; min-height:36px; }
+  .val button[aria-pressed="true"], .val select.vald { border-color:var(--gul); color:var(--gul); }
+  .val select { color-scheme:dark; }
+  .tal { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:760px) { .tal { grid-template-columns:1fr 1fr; } }
+  .tal .ruta { margin:0; }
+  .tal span { display:block; font:11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.1em; }
+  .tal b { display:block; font:600 32px/1.15 var(--mono); margin-top:6px; letter-spacing:-.02em; }
+  .tal small { display:block; color:var(--text2); font-size:13px; line-height:1.35; margin-top:4px; }
+  .ruta + .ruta, .tal + .ruta, .ruta + details, details + .ruta { margin-top:10px; }
+  .gron { color:var(--gron); } .gul { color:var(--gul); } .rod { color:var(--rod); }
+  .omdome, .tal span.omdome { display:inline-block; font:600 11px var(--mono); padding:2px 7px; border-radius:10px; margin-top:6px; letter-spacing:.04em; }
+  .omdome.gron { background:rgba(31,178,90,.16); } .omdome.gul { background:rgba(255,201,74,.16); } .omdome.rod { background:rgba(255,138,122,.16); }
+  .tabell { overflow-x:auto; }
+  table { border-collapse:collapse; font-size:14px; width:100%; }
+  th { font:600 11px var(--mono); color:var(--dampad); text-transform:uppercase; letter-spacing:.06em; text-align:right; padding:0 0 8px 10px; vertical-align:bottom; }
+  th:first-child, td:first-child { text-align:left; padding-left:0; }
+  td { border-top:1px dashed var(--skilje); padding:8px 0 8px 10px; text-align:right; vertical-align:top; }
+  td.l { font:500 14px var(--sans); white-space:normal; min-width:130px; }
+  td.l small { display:block; color:var(--dampad); font:12px var(--sans); }
+  td .v { font:600 15px var(--mono); white-space:nowrap; }
+  td .s { display:block; font:11.5px var(--mono); color:var(--dampad); white-space:nowrap; }
+  td .s.o { color:var(--text2); }
+  td.tomt { color:var(--dampad2); font:12px var(--mono); }
+  tr.hv td { border-top:1px solid var(--skilje); }
+  tr.hv td.l { font-weight:600; }
+  tr.j1 td.l { color:var(--text2); }
+  .forklaring { font-size:13px; color:var(--text2); margin:10px 0 0; max-width:78ch; }
+  .forklaring i { font-style:normal; color:var(--text); }
+  ul.gora { margin:0; padding:0; list-style:none; }
+  ul.gora li { padding:10px 0; border-top:1px dashed var(--skilje); }
+  ul.gora li:first-child { border-top:0; padding-top:0; }
+  ul.gora b { font:600 15px var(--sans); }
+  ul.gora .las { display:block; color:var(--text2); font-size:13.5px; margin-top:3px; }
+  .tom { color:var(--dampad); font-size:13px; }
+  details.mer { margin-top:10px; border:1px dashed var(--skilje); border-radius:14px; }
+  details.mer > summary { cursor:pointer; list-style:none; padding:14px 18px; font:500 12px var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dampad); min-height:44px; }
+  details.mer > summary::-webkit-details-marker { display:none; }
+  details.mer > summary::before { content:"+ "; color:var(--text2); }
+  details.mer[open] > summary::before { content:"− "; }
+  details.mer > .ruta { margin:0 10px 10px; }
+  .gr td, .gr th { text-align:left; padding-left:0; padding-right:12px; }
+  .gr td { font-size:13.5px; color:var(--text2); }
+  .gr td:first-child { color:var(--text); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav id="hv-meny" aria-label="Meny"></nav>
+  <p class="ingress" id="hv-nej" hidden>Ditt konto har inte det här menyvalet.</p>
+
+  <div id="hv-innehall" hidden>
+    <h1><b>HALKVAKT</b>Kvalitet</h1>
+    <nav class="undermeny" aria-label="Olyckor"><a href="olyckor">Olycksfacit</a><a href="kvalitet" aria-current="page">Kvalitetstavlan</a></nav>
+    <p class="exempel" id="exempel" hidden>Exempeldata. Siffrorna är påhittade när admin-funktionen inte svarar på kvalitetstavlan.</p>
+    <p class="ingress">Hur väl Halkvaktens varningar stämmer med fyra källor som varningarna inte själva bygger på: friktionen vid stationerna, Trafikverkets väglag,
+      kamerabilderna och singelolyckorna. Räknat bakåt från <span id="fran">11/9</span> och sedan varje dygn. En redovisning, ingen grind: inget här ändrar vad appen säger.</p>
+    <p class="meta" id="lage"></p>
+
+    <div class="val" id="val" role="group" aria-label="Period"></div>
+
+    <div class="tal" id="korthet"></div>
+
+    <div class="ruta" style="margin-top:10px"><h2>Att göra</h2><ul class="gora" id="gora"></ul></div>
+
+    <div class="ruta"><h2>Täckning: varnade Halkvakt när det var halt?</h2>
+      <div class="tabell"><table id="tackning"></table></div>
+      <p class="forklaring">Andelen hala halvtimmar där en varning gällde inom 2 km, någon gång från två timmar före halkan till dess slut. Halt är friktion under 0,30 med ytan
+        högst +1 °C, eller halka, is, snö eller slask i väglaget. Bara raden <i>Halkvakt</i> får färg: inget enskilt lager ska täcka allt. Mot väglaget räknas Halkvakt utan A1, som är väglaget.</p></div>
+
+    <div class="ruta"><h2>Träffsäkerhet och lyft: var det halt när Halkvakt varnade?</h2>
+      <div class="tabell"><table id="traff"></table></div>
+      <p class="forklaring" id="traff-text"></p></div>
+
+    <div class="ruta"><h2>Relativ risk: är det farligare att köra under en varning?</h2>
+      <div class="tabell"><table id="risk"></table></div>
+      <p class="forklaring">Singelolyckor per miljon fordonskilometer när lagret varnade på sträckan, delat med samma tal när det inte varnade. Trafiken är ÅDT per sträcka, delad på natt och dag.
+        Olyckorna kräver ingen bedömning av om det var halt. Småvägsrösten saknar ÅDT och räknas per punkt och timme, och <i>Halkvakt</i> här är A1, A2 och K. Talet visas först med 20 olyckor under varning.</p></div>
+
+    <div class="ruta"><h2>Vecka för vecka</h2>
+      <div class="tabell"><table id="veckor"></table></div>
+      <p class="forklaring">Halkvakt som helhet. Veckorna före 27/11 är räknade bakåt ur lägesfilens historik, med samma kod som räknar varje dygn framåt.</p></div>
+
+    <div class="ruta"><h2>Oenigheter och tystnadens bilder</h2>
+      <div class="tabell"><table id="oenig"></table></div>
+      <p class="forklaring">Antal, inga andelar. Låg friktion med bar väg i bild tyder på svartis eller rimfrost, där A2 eller K borde ha varnat. Halka i väglaget med god friktion tyder på ett
+        gammalt väglag eller en lokal halka.</p></div>
+
+    <div class="ruta"><h2>Underlaget</h2><div class="tabell"><table id="underlag"></table></div></div>
+
+    <details class="mer"><summary>Gränserna och vad man gör</summary>
+      <div class="ruta"><h2>Gränserna</h2><div class="tabell"><table class="gr">
+        <tr><th>Mått</th><th class="gron">Bra</th><th class="gul">Godkänt</th><th class="rod">Mindre bra</th></tr>
+        <tr><td>Täckning</td><td>minst 80 %</td><td>60–80 %</td><td>under 60 %</td></tr>
+        <tr><td>Lyftet</td><td>minst 4</td><td>2–4</td><td>under 2</td></tr>
+        <tr><td>Relativ risk</td><td>minst 3</td><td>1,5–3</td><td>under 1,5</td></tr>
+        <tr><td>Mot snöflingan</td><td></td><td></td><td>lägre lyft än J1 för samma källa</td></tr></table></div>
+        <p class="forklaring">Färgen sätts efter talet. <i>Osäkert</i> står bredvid när 95-procentsintervallet spänner över två färger. En andel visas först med 20 i nämnaren.
+          Föraren ska få en varning vid fyra av fem hala halvtimmar. Lyft 1 är vad ett slumpvis valt ställe ger, och vid 2 är halkan dubbelt så vanlig under varningen som annars.
+          En relativ risk under 1,5 är för liten för att föraren ska behöva ändra något, och vid 3 är risken tredubblad. Ett lager som inte pekar ut halkan bättre än bilens snöflinga tillför inget.</p></div>
+      <div class="ruta"><h2>Vad man gör när ett tal är svagt</h2><ul class="gora" id="alla-atgarder"></ul></div>
+    </details>
+  </div>
+</div>
+
+<script src="assets/admin.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NAMN = { A1: ["A1", "hal sträcka, väglaget"], A2: ["A2", "frysrisk vid station"], K: ["K", "kandidatens betavarning"], R: ["R", "småvägsrösten"],
+    HV: ["Halkvakt", "något av lagren"], J1: ["J1", "snöflingan, luften under +3 °C"] };
+  var LAGER = ["A1", "A2", "K", "R", "HV", "J1"];
+  var OMDOME = { gron: "bra", gul: "godkänt", rod: "mindre bra" };
+  // §9 i TROSKLAR-KVALITETSTAVLAN: vad man läser först, och vad som brukar hjälpa.
+  var ATGARD = {
+    tackning: ["Täckningen är låg", "Läs de hala halvtimmarna utan varning, per lager som låg närmast.",
+      "Kandidatens yta över 0 °C (kort #675). Fukten som inte syns: stationssnö, radarn. Räckvidden (skuggan läses 29/11). Trafikverkets fördröjning för A1. En ändring prövas i skuggan innan den talar."],
+    lyft: ["Träffsäkerheten eller lyftet är lågt", "Läs de varningar som ingen källa bekräftade.",
+      "Saltade vägar som är våta under noll (sql/146). Gammalt väglag (väglagets ålder). För bred räckvidd. Fukt från nederbörd som slutat för länge sedan. En stramare regel prövas tyst först."],
+    risk: ["Den relativa risken är låg", "Läs timmarna med varning och utan olycka, och olyckorna utan varning.",
+      "Varningarna sprids över timmar som inte är farliga: samma åtgärder som för träffsäkerheten. Eller missas de farliga timmarna: samma som för täckningen. Få olyckor: vänta på fler."],
+    j1: ["Lyftet är lägre än snöflingans", "Läs lagrets regel som helhet.",
+      "Lagret tillför inget utöver luften. Bengt och Axel avgör om det ska pausas eller byggas om."],
+    oenig: ["Källorna är oense", "Läs oenigheterna.",
+      "Låg friktion med bar väg i bild är svartis: A2 eller K borde ha varnat. Halka i väglaget med god friktion: läs väglagets ålder."] };
+
+  function esc(x) { return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function dag(d) { var p = d.split("-"); return Number(p[2]) + "/" + Number(p[1]); }
+  function pro(x) { return x == null ? "–" : Math.round(100 * x) + " %"; }
+  function dec(x, n) { return x == null ? "–" : x.toFixed(n == null ? 1 : n).replace(".", ","); }
+  function hel(x) { return Math.round(x).toLocaleString("sv-SE"); }
+
+  // En cell: talet i sin färg, antalet och intervallet under. Under minsta antalet bara antalet.
+  function cell(c, typ, tom) {
+    if (!c || (!c.n && !c.nV)) return '<td class="tomt">' + (tom || "–") + "</td>";
+    var v = typ === "andel" ? pro(c.varde) : dec(c.varde, typ === "risk" ? 1 : 1);
+    var titel = c.farg ? OMDOME[c.farg] + (c.osakert ? ", osäkert" : "") + (c.motJ1 ? ", lägre än snöflingan" : "") : "";
+    var s = typ === "risk" ? hel(c.kV) + " olyckor" : hel(c.k) + " av " + hel(c.n);
+    var iv = c.lo != null && c.hi != null ? (typ === "andel" ? Math.round(100 * c.lo) + "–" + Math.round(100 * c.hi) + " %" : dec(c.lo) + "–" + dec(c.hi)) : "";
+    if (c.varde == null) return '<td><span class="v" style="color:var(--dampad)">–</span><span class="s">' + s + '</span><span class="s">för få</span></td>';
+    return '<td title="' + esc(titel) + '"><span class="v' + (c.farg ? " " + c.farg : "") + '">' + v + (c.motJ1 ? " ↓" : "") + '</span><span class="s">' + s + "</span>" +
+      (iv ? '<span class="s">' + iv + "</span>" : "") + (c.osakert ? '<span class="s o">osäkert</span>' : "") + (c.motJ1 ? '<span class="s rod">under J1</span>' : "") + "</td>";
+  }
+  function lagerCell(L) { var n = NAMN[L]; return '<td class="l">' + n[0] + "<small>" + n[1] + "</small></td>"; }
+  function rad(L, celler) { return '<tr class="' + (L === "HV" ? "hv" : L === "J1" ? "j1" : "") + '">' + lagerCell(L) + celler + "</tr>"; }
+
+  function ritaKorthet(p) {
+    var t = [
+      ["Täckning mot friktionen", p.tackning.HV.FR, "andel", "hala halvtimmar med varning"],
+      ["Täckning mot väglaget", p.tackning.HV.VL, "andel", "hala halvtimmar, Halkvakt utom A1"],
+      ["Lyft mot friktionen", p.lyft.HV.FR, "lyft", "gånger vanligare halka under varning"],
+      ["Relativ risk", p.risk.HV, "risk", "gånger fler singelolyckor per km under varning"]];
+    $("korthet").innerHTML = t.map(function (x) {
+      var c = x[1], v = c.varde == null ? "–" : x[2] === "andel" ? pro(c.varde) : dec(c.varde);
+      var om = c.farg ? '<span class="omdome ' + c.farg + '">' + OMDOME[c.farg] + (c.osakert ? ", osäkert" : "") + "</span>" : '<span class="omdome" style="color:var(--dampad)">' + (c.varde == null ? "för få än" : "ingen färg") + "</span>";
+      return '<div class="ruta"><span>' + x[0] + '</span><b class="' + (c.farg || "") + '">' + v + "</b><small>" + x[3] + "</small>" + om + "</div>";
+    }).join("");
+  }
+
+  function ritaGora(p) {
+    var l = [];
+    var lagg = function (typ, vad, c) { if (c && (c.farg === "rod" || c.farg === "gul")) l.push({ typ: c.motJ1 ? "j1" : typ, vad: vad, c: c }); };
+    lagg("tackning", "Täckning mot friktionen", p.tackning.HV.FR);
+    lagg("tackning", "Täckning mot väglaget (utom A1)", p.tackning.HV.VL);
+    LAGER.forEach(function (L) { ["FR", "VL"].forEach(function (Q) { lagg("lyft", NAMN[L][0] + ": lyft mot " + (Q === "FR" ? "friktionen" : "väglaget"), p.lyft[L] && p.lyft[L][Q]); }); });
+    LAGER.forEach(function (L) { lagg("risk", NAMN[L][0] + ": relativ risk", p.risk[L]); });
+    // En rad per åtgärd i §9, med de svaga talen under den; de röda först.
+    var typer = ["tackning", "lyft", "risk", "j1"].map(function (t) { return { t: t, x: l.filter(function (x) { return x.typ === t; }) }; })
+      .filter(function (g) { return g.x.length; });
+    typer.sort(function (a, b) { var r = function (g) { return g.x.some(function (x) { return x.c.farg === "rod"; }) ? 0 : 1; }; return r(a) - r(b); });
+    $("gora").innerHTML = typer.length ? typer.map(function (g) {
+      var a = ATGARD[g.t];
+      return "<li><b>" + esc(a[0]) + "</b>" + '<span class="las">' + g.x.map(function (x) {
+        return '<span class="' + x.c.farg + '">' + esc(x.vad) + "</span> " + OMDOME[x.c.farg] + (x.c.osakert ? ", osäkert" : ""); }).join(" · ") + "</span>" +
+        '<span class="las">' + esc(a[1]) + " " + esc(a[2]) + "</span></li>";
+    }).join("") : '<li class="tom">Inget tal med färg är svagt i perioden. Tal utan färg har för få händelser än.</li>';
+  }
+
+  function ritaPeriod(v, p) {
+    ritaKorthet(p); ritaGora(p);
+    $("tackning").innerHTML = "<tr><th>Lager</th><th>Mot friktionen</th><th>Mot väglaget</th></tr>" + LAGER.map(function (L) {
+      return rad(L, cell(p.tackning[L].FR, "andel") + cell(p.tackning[L].VL, "andel", L === "A1" ? "egen källa" : L === "R" ? "finns inte" : "–"));
+    }).join("");
+    $("traff").innerHTML = "<tr><th>Lager</th><th>Friktionen</th><th>Lyft</th><th>Väglaget</th><th>Lyft</th><th>Kamerorna</th><th>Alla källor</th></tr>" + LAGER.map(function (L) {
+      var t = p.traff[L], y = p.lyft[L];
+      return rad(L, cell(t.FR, "andel") + cell(y.FR, "lyft") + cell(t.VL, "andel", L === "A1" ? "egen källa" : L === "R" ? "finns inte" : "–") + cell(y.VL, "lyft", L === "A1" || L === "R" ? "" : "–") +
+        cell(t.KA, "andel", "inga bilder än") + cell(t.ALLA, "andel"));
+    }).join("") + '<tr><td class="l">Basen<small>halt i genomsnitt</small></td>' + cell(p.bas.FR, "andel") + "<td></td>" + cell(p.bas.VL, "andel") + "<td></td><td></td><td></td></tr>";
+    $("traff-text").innerHTML = "Andelen av lagrets varningar där källan visade halka, från en timme före varningens halvtimme till två timmar efter. <i>Lyft</i> är träffsäkerheten delad med basen: " +
+      "hur många gånger vanligare halkan är under varningen än annars. Kamerorna bekräftar men fäller aldrig, och har ingen bas. <i>Alla källor</i> är andelen där minst en oberoende källa bekräftar." +
+      (p.samma ? " A2 mot friktionen vid den varnande stationen själv: " + pro(p.samma.varde) + " (" + hel(p.samma.k) + " av " + hel(p.samma.n) + ")." : "");
+    $("risk").innerHTML = "<tr><th>Lager</th><th>Med varning</th><th>Utan varning</th><th>Relativ risk</th></tr>" + LAGER.map(function (L) {
+      var r = p.risk[L]; if (!r || (!r.nV && !r.nU)) return rad(L, '<td class="tomt">–</td><td class="tomt">–</td><td class="tomt">–</td>');
+      var per = L === "R" ? function (k, n) { return n ? dec(1000 * k / n, 2) + " per 1 000 punkttimmar" : "–"; } : function (k, n) { return n ? dec(1e6 * k / n, 2) + " per milj. fkm" : "–"; };
+      return rad(L, '<td><span class="v">' + hel(r.kV) + '</span><span class="s">' + per(r.kV, r.nV) + '</span></td><td><span class="v">' + hel(r.kU) + '</span><span class="s">' + per(r.kU, r.nU) + "</span></td>" + cell(r, "risk"));
+    }).join("");
+    var o = p.oenig;
+    $("oenig").innerHTML = "<tr><th></th><th>Oense</th><th>Bedömda</th></tr>" +
+      '<tr><td class="l">Låg friktion, bar väg i bild<small>svartis eller rimfrost</small></td><td><span class="v">' + hel(o.FR.k) + '</span></td><td><span class="v">' + hel(o.FR.n) + "</span></td></tr>" +
+      '<tr><td class="l">Halka i väglaget, god friktion<small>gammalt väglag eller lokal halka</small></td><td><span class="v">' + hel(o.VL.k) + '</span></td><td><span class="v">' + hel(o.VL.n) + "</span></td></tr>" +
+      '<tr><td class="l">Tystnadens bilder<small>is, snö eller slask där ingen regel varnade</small></td><td><span class="v">' + hel(p.v3.k) + '</span></td><td><span class="v">' + hel(p.v3.n) + "</span></td></tr>";
+    var u = p.underlag;
+    $("underlag").innerHTML = "<tr><th></th><th>Antal</th></tr>" +
+      '<tr><td class="l">Dygn i perioden<small>' + (p.fran ? dag(p.fran) + "–" + dag(p.till) : "") + '</small></td><td><span class="v">' + p.dygn + "</span></td></tr>" +
+      '<tr><td class="l">Lägesfilens versioner<small>var tionde minut ger 144 per dygn</small></td><td><span class="v">' + hel(u.versioner) + "</span></td></tr>" +
+      '<tr><td class="l">Dygn utan lägesfil<small>räknas inte för något lager</small></td><td><span class="v">' + u.dygnUtanFil + "</span></td></tr>" +
+      '<tr><td class="l">Friktionens stationsdygn<small>stationer med friktion, summerat över dygnen</small></td><td><span class="v">' + hel(u.stationsdygn) + "</span></td></tr>";
+  }
+
+  function ritaVeckor(v) {
+    var w = v.perioder.filter(function (p) { return /V\d+$/.test(p.id); });
+    $("veckor").innerHTML = "<tr><th>Vecka</th><th>Täckning friktionen</th><th>Täckning väglaget</th><th>Lyft friktionen</th><th>Lyft väglaget</th><th>Relativ risk</th></tr>" + w.map(function (p) {
+      return '<tr><td class="l">' + esc(p.namn) + "<small>" + dag(p.fran) + "–" + dag(p.till) + "</small></td>" + cell(p.tackning.HV.FR, "andel") + cell(p.tackning.HV.VL, "andel") +
+        cell(p.lyft.HV.FR, "lyft") + cell(p.lyft.HV.VL, "lyft") + cell(p.risk.HV, "risk") + "</tr>";
+    }).join("");
+  }
+
+  function rita(v) {
+    if (!v.perioder.length) { $("lage").textContent = "Inga dygn räknade än."; return; }
+    $("fran").textContent = dag(v.fran);
+    $("lage").textContent = "Räknat " + dag(v.fran) + "–" + dag(v.till) + (v.skriven ? ", senast skrivet " + new Date(v.skriven).toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "short", timeStyle: "short" }) : "") + ". Intervallen är 95 %, dragna per dygn.";
+    var vald = "sasong";
+    var knappar = [["sasong", "Säsongen"], ["7d", "7 dygn"]];
+    var veckor = v.perioder.filter(function (p) { return /V\d+$/.test(p.id); });
+    $("val").innerHTML = knappar.map(function (k) { return '<button type="button" data-p="' + k[0] + '">' + k[1] + "</button>"; }).join("") +
+      '<select aria-label="Vecka"><option value="">Vecka…</option>' + veckor.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.namn) + " (" + dag(p.fran) + "–" + dag(p.till) + ")</option>"; }).join("") + "</select>";
+    var valj = function (id) {
+      vald = id;
+      var p = v.perioder.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+      [].forEach.call($("val").querySelectorAll("button"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-p") === id)); });
+      var s = $("val").querySelector("select"); s.value = /V\d+$/.test(id) ? id : ""; s.classList.toggle("vald", /V\d+$/.test(id));
+      ritaPeriod(v, p);
+    };
+    $("val").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) valj(b.getAttribute("data-p")); });
+    $("val").querySelector("select").addEventListener("change", function (e) { if (e.target.value) valj(e.target.value); });
+    valj(vald);
+    ritaVeckor(v);
+  }
+
+  $("alla-atgarder").innerHTML = ["tackning", "lyft", "risk", "j1", "oenig"].map(function (k) {
+    var a = ATGARD[k]; return "<li><b>" + esc(a[0]) + '</b><span class="las">' + esc(a[1]) + " " + esc(a[2]) + "</span></li>";
+  }).join("");
+
+  // Exempeldata: samma form som svaret, med påhittade tal.
+  function exempel() {
+    var c = function (n, k, f, o) { return { n: n, k: k, varde: n >= 20 ? k / n : null, lo: n >= 20 ? Math.max(0, k / n - 0.08) : null, hi: n >= 20 ? Math.min(1, k / n + 0.08) : null, farg: f || null, osakert: !!o }; };
+    var y = function (x, f, o, j) { return { n: 100, k: 30, varde: x, lo: x * 0.7, hi: x * 1.3, farg: f || null, osakert: !!o, motJ1: j }; };
+    var rr = function (kV, nV, kU, nU, f) { var x = kV >= 20 ? (kV / nV) / (kU / nU) : null; return { kV: kV, nV: nV, kU: kU, nU: nU, varde: x, lo: x && x * 0.7, hi: x && x * 1.4, farg: x == null ? null : f, osakert: false }; };
+    var per = function (id, namn, fran, till, dygn, s) {
+      return { id: id, namn: namn, fran: fran, till: till, dygn: dygn,
+        tackning: { A1: { FR: c(400 * s, 120 * s), VL: c(0, 0) }, A2: { FR: c(400 * s, 210 * s), VL: c(900 * s, 380 * s) }, K: { FR: c(400 * s, 230 * s), VL: c(900 * s, 520 * s) },
+          R: { FR: c(10, 2), VL: c(0, 0) }, HV: { FR: c(400 * s, 290 * s, "gul", true), VL: c(900 * s, 610 * s, "gul") }, J1: { FR: c(400 * s, 380 * s), VL: c(900 * s, 860 * s) } },
+        traff: { A1: { FR: c(300 * s, 140 * s), VL: c(0, 0), KA: c(40, 31), ALLA: c(320 * s, 190 * s) }, A2: { FR: c(500 * s, 110 * s), VL: c(800 * s, 260 * s), KA: c(60, 30), ALLA: c(900 * s, 360 * s) },
+          K: { FR: c(700 * s, 120 * s), VL: c(1500 * s, 420 * s), KA: c(80, 37), ALLA: c(1600 * s, 520 * s) }, R: { FR: c(12, 2), VL: c(0, 0), KA: c(0, 0), ALLA: c(12, 2) },
+          HV: { FR: c(1100 * s, 260 * s), VL: c(1900 * s, 560 * s), KA: c(150, 80), ALLA: c(2200 * s, 800 * s) }, J1: { FR: c(5000 * s, 600 * s), VL: c(9000 * s, 1600 * s), KA: c(0, 0), ALLA: c(9500 * s, 2000 * s) } },
+        lyft: { A1: { FR: y(7.8, "gron"), VL: { n: 0, k: 0, varde: null } }, A2: { FR: y(3.7, "gul", true), VL: y(2.9, "gul") }, K: { FR: y(2.9, "gul"), VL: y(2.5, "gul") },
+          R: { FR: { n: 12, k: 2, varde: null }, VL: { n: 0, k: 0, varde: null } }, HV: { FR: y(4.0, "gron", true), VL: y(2.6, "gul") }, J1: { FR: y(2.0), VL: y(1.6) } },
+        bas: { FR: c(20000 * s, 1200 * s), VL: c(90000 * s, 10000 * s) }, samma: c(200 * s, 70 * s),
+        risk: { A1: rr(30 * s, 4e6 * s, 40 * s, 6e7 * s, "gron"), A2: rr(22 * s, 6e6 * s, 48 * s, 5.8e7 * s, "gul"), K: rr(26 * s, 9e6 * s, 44 * s, 5.5e7 * s, "gul"),
+          R: rr(0, 9000, 3, 4e5, null), HV: rr(45 * s, 1.4e7 * s, 25 * s, 5e7 * s, "gul"), J1: rr(60 * s, 3e7 * s, 10 * s, 3.4e7 * s, null) },
+        oenig: { FR: { n: 60 * s, k: 9 * s }, VL: { n: 700 * s, k: 210 * s } }, v3: { n: 40, k: 6 }, underlag: { versioner: 144 * dygn - 30, stationsdygn: 50 * dygn, dygnUtanFil: 0 } };
+    };
+    return { fran: "2026-09-11", till: "2026-11-26", skriven: null, perioder: [per("sasong", "Säsongen", "2026-09-11", "2026-11-26", 77, 1),
+      per("7d", "Senaste 7 dygnen", "2026-11-20", "2026-11-26", 7, 0.3), per("2026-V48", "Vecka 48", "2026-11-23", "2026-11-26", 4, 0.2), per("2026-V47", "Vecka 47", "2026-11-16", "2026-11-22", 7, 0.3)] };
+  }
+
+  HV.sida("olyckor", function () {
+    var ex = /[?&]exempel=1/.test(location.search);
+    (ex ? Promise.reject(new Error("exempel")) : HV.api("olyckor", { vy: "kvalitet" })).then(function (v) {
+      if (!v || !v.perioder) throw new Error("svaret saknar perioder");
+      $("exempel").hidden = true; rita(v);
+    }).catch(function () { $("exempel").hidden = false; rita(exempel()); });
+  });
+})();
+</script>
+</body>
+</html>
